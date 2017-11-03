@@ -56,7 +56,7 @@ public class ResourceHolder : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle = OpenFileWithWinAPI();
+	IntPtr _handle;
 
 	public FileWrapper(string name)
 	{
@@ -95,7 +95,7 @@ public class FileWrapper : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle = OpenFileWithWinAPI();
+	IntPtr _handle;
 
 	public FileWrapper(string name)
 	{
@@ -129,7 +129,7 @@ public class FileWrapper : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle = OpenFileWithWinAPI();
+	IntPtr _handle;
 	bool _disposed;
 
 	public FileWrapper(string name)
