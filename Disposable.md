@@ -33,3 +33,8 @@ public interface IDisposable
 
 ### Вариации реализации IDisposable
 
+### Связь Disposable и финализации
+
+### Два уровня Disposable Design Principle
+
+### Итоги
