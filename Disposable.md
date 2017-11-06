@@ -196,11 +196,140 @@ public class FileWrapper : IDisposable
 
 Вторая причина имеет более глубокие корни. Представьте себе что вы позволили себе написать приложение, которое не сильно заботится о памяти. Аллоцирует в огромных количествах без кэширования и прочих премудростей. Однажды такое приложение завалится с OutOfMemoryException. А когда приложение падает с этим исключением, возникают особые условия исполнения кода: ему нельзя что-либо пытаться аллоцировать. Ведь это приведет к повторному исключению, даже если предыдущее было поймано. Это вовсе не обозначает что мы не должны создавать новые экземпляры объектов. К этому исключению может привести обычный вызов метода. Например, вызов метода финаизации. Напомню, что метды компилируются тогда, когда они вызываются в первый раз. И это обычное поведение. Как же уберечься от этой проблемы? Достаточно легко. Если вы отнаследуете объект от *CriticalFinalizerObject*, то *все* методы этого типа будут компилироваться сразу же, при загрузке типа в память. Мало того, если вы пометите методы атрибутом *[PrePrepareMethod]*, то они также будут предварительно скомпилированны и будут безопасными с точки зрения вызова при нехватке ресурсов.
 
-Почему это так важно? Зачем тратить так много усилий на тех, кто уйдет в мир иной? А все дело в том что неуправляемые ресурсы могут повиснуть в системе очень надолго. Даже после того как ваше приложение завершит работу. Даже после перезагрузки компьютера (если пользователь открыл в вашем приложении файл с файловой шары, тот будет заблокирован удаленным хостом и отпущен либо по таймауту либо когда вы освободите ресурс, закрыв файл. Если ваше приложение вылетит в момент открытого файла, то он не будет закрыт даже после перезагрузки. Придется ждать достаточно продолжительное время для того чтобы удаленный хост отпустил бы его). Плюс ко всему вам нельзя допускать выброса исключений в финализаторах - это приведет к ускоренной гибели CLR и окончательному выбросу из приложения: вызовы финализаторов не оборачиваются *try .. catch*. Т.е. освобождая ресурс вам надо быть уверенными в том что он еще может быть освобожден.
+Почему это так важно? Зачем тратить так много усилий на тех, кто уйдет в мир иной? А все дело в том что неуправляемые ресурсы могут повиснуть в системе очень надолго. Даже после того как ваше приложение завершит работу. Даже после перезагрузки компьютера (если пользователь открыл в вашем приложении файл с файловой шары, тот будет заблокирован удаленным хостом и отпущен либо по таймауту либо когда вы освободите ресурс, закрыв файл. Если ваше приложение вылетит в момент открытого файла, то он не будет закрыт даже после перезагрузки. Придется ждать достаточно продолжительное время для того чтобы удаленный хост отпустил бы его). Плюс ко всему вам нельзя допускать выброса исключений в финализаторах - это приведет к ускоренной гибели CLR и окончательному выбросу из приложения: вызовы финализаторов не оборачиваются *try .. catch*. Т.е. освобождая ресурс вам надо быть уверенными в том что он еще может быть освобожден. И последний не менее интересный факт - если CLR осуществляет аварийную выгрузку домена, финализаторы типов, производных от *CriticalFinalizerObject* также будут вызваны в отличии от тех, кто наследовался напрямую от *Object*.
 
-### SafeHandle / CriticalHandle / производные
+### SafeHandle / CriticalHandle / SafeBuffer / производные
 
-Поговорим про специальные типы: SafeHandle, CriticalHandle и их производные.
+У меня есть некоторое ощущение что я для вас сейчас открою ящик Пандоры. Давайте поговорим про специальные типы: SafeHandle, CriticalHandle и их производные. И закончим уже, наконец, наш шаблон типа, предоставляющего доступ к unmanaged ресурсу. Но перед этим давайте попробуем перечислить все что к нам _обычно_ идет из unmanaged мира:
+  
+  - Первое и самое ожидаемое, что оттуда обычно идет - это дескрипторы. Для разработчика .NET это может быть абсолютно пустым словом, но это очень важная составляющая мира операционных систем. По своей сути - это 32-х либо 64-х разрядное число, определяющее открытую сессию взаимодействия с операционной системой. Т.е., например, открываете вы файл чтобы с ним поработать - получили дескриптор. И используя его работаете с ОС: делаете *Seek*, *Read*, *Write* операции. Открываете вы сокет чтобы слушать соединение и данные - опять же получаете дескриптор. Или создали Семафор или Мьютекс - получили дескриптор. В мире .NET дескрипторы хранятся в типе *IntPtr*;
+  - Второе - это массивы данных. Существует несколько путей доступа к массивам из неуправляемого мира. В любом случае для начала необходимо корректно описать заголовок метода, который будет вызван нами и который находится в unsafe мире, прописав туда IntPtr на место адреса буфера и вторым параметром - забрать его размер. А далее - либо наботать сним через unsafe код (ключевое слово unsafe), либо использовать SafeBuffer, который обернет буфер данных удобным .NET классом;
+  - Строки. Со строками все несколько проще потому что наша задача - определить формат и кодировку строки, которую мы забираем. Далее строка копируется к нам (класс string - immutable) и мы дальше ни о че не думаем.
+  - ValueTypes, которые забираются копированием и о их судьбе думать вообще нет никакой необходимости.
+
+#### SafeHandle 
+
+Это специальный класс .NET CLR, который наследует CriticalFinalizerObject и который призван обернуть дескрипторы операционной системы максимально безопасно и удобно. 
+
+```csharp
+
+[System.Security.SecurityCritical]
+[SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
+public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
+{
+    // Дескриптор, пришедший от ОС
+    protected IntPtr handle;   
+    // Состояние (валидность, счетчик ссылок)
+    private int _state;   
+    // Флаг возможности освободить handle. Может так получиться что сы оборачиваем чужой handle и освобождать его не имеем права
+    private bool _ownsHandle;  
+    // Экземпляр проинициализирован
+    private bool _fullyInitialized;
+ 
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+    protected SafeHandle(IntPtr invalidHandleValue, bool ownsHandle)
+    {
+    }
+ 
+    // Финализатор по шаблону вызывает Dispose(false)
+    [System.Security.SecuritySafeCritical]
+    ~SafeHandle()
+    {
+        Dispose(false);
+    }
+ 
+    // Выставление hanlde может идти как вручную, так и при помощи p/invoke Marshal - автоматически
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    protected void SetHandle(IntPtr handle) {
+        this.handle = handle;
+    }
+ 
+    // This method is necessary for getting an IntPtr out of a SafeHandle.
+    // Used to tell whether a call to create the handle succeeded by comparing
+    // the handle against a known invalid value, and for backwards 
+    // compatibility to support the handle properties returning IntPtrs on
+    // many of our Framework classes.
+    // Note that this method is dangerous for two reasons:
+    //  1) If the handle has been marked invalid with SetHandleasInvalid,
+    //     DangerousGetHandle will still return the original handle value.
+    //  2) The handle returned may be recycled at any point. At best this means
+    //     the handle might stop working suddenly. At worst, if the handle or
+    //     the resource the handle represents is exposed to untrusted code in
+    //     any way, this can lead to a handle recycling security attack (i.e. an
+    //     untrusted caller can query data on the handle you've just returned
+    //     and get back information for an entirely unrelated resource).
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [ResourceExposure(ResourceScope.None)]
+    public IntPtr DangerousGetHandle()
+    {
+        return handle;
+    }
+ 
+    // ресурс закрыт (более не доступен для работы)
+    public bool IsClosed {
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        get { return (_state & 1) == 1; }
+    }
+ 
+    // ресурс не является доступным для работы. Вы можете переопределить свойство, изменив логику.
+    public abstract bool IsInvalid {
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+        get;
+    }
+ 
+    // закрытие ресурса через шаблон Close()
+    [System.Security.SecurityCritical]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    public void Close() {
+        Dispose(true);
+    }
+    
+    // Закрытие ресурса через шаблон Dispose()
+    [System.Security.SecuritySafeCritical]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    public void Dispose() {
+        Dispose(true);
+    }
+ 
+    [System.Security.SecurityCritical]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    protected virtual void Dispose(bool disposing)
+    {
+        // ... 
+    }
+ 
+    // Вы должны вызывать этот метод всякий раз когда понимаете что handle более не является рабочим.
+    // Если вы этого не сделаете, можете получить утечку
+    [System.Security.SecurityCritical]  
+    [ResourceExposure(ResourceScope.None)]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    public extern void SetHandleAsInvalid();
+ 
+    // Implement this abstract method in your derived class to specify how to
+    // free the handle. Be careful not write any code that's subject to faults
+    // in this method (the runtime will prepare the infrastructure for you so
+    // that no jit allocations etc. will occur, but don't allocate memory unless
+    // you can deal with the failure and still free the handle).
+    // The boolean returned should be true for success and false if the runtime
+    // should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
+    // MDA is enabled.
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    protected abstract bool ReleaseHandle();
+ 
+    [System.Security.SecurityCritical]  // auto-generated
+    [ResourceExposure(ResourceScope.None)]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    public extern void DangerousAddRef(ref bool success);
+ 
+    [System.Security.SecurityCritical]  // auto-generated
+    [ResourceExposure(ResourceScope.None)]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    public extern void DangerousRelease();
+}
+```  
 
 ### Многопоточность
 
