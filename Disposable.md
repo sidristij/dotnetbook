@@ -90,13 +90,13 @@ public class FileWrapper : IDisposable
 	}
 
 	[DllImport("kernel32.dll", EntryPoint = "CreateFile", SetLastError = true)]
-    private static extern IntPtr CreateFile(String lpFileName,
-        UInt32 dwDesiredAccess, UInt32 dwShareMode,
-        IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
-        UInt32 dwFlagsAndAttributes,
-        IntPtr hTemplateFile);
-    
-    [DllImport("kernel32.dll", SetLastError=true)]
+	private static extern IntPtr CreateFile(String lpFileName,
+		UInt32 dwDesiredAccess, UInt32 dwShareMode,
+		IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
+		UInt32 dwFlagsAndAttributes,
+		IntPtr hTemplateFile);
+	
+	[DllImport("kernel32.dll", SetLastError=true)]
 	private static extern bool CloseHandle(IntPtr hObject);
 }
 ```
@@ -213,18 +213,13 @@ public class FileWrapper : IDisposable
 
 ```csharp
 
-[System.Security.SecurityCritical]
-[SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
+[SecurityCritical, SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
 {
-    // Дескриптор, пришедший от ОС
-    protected IntPtr handle;   
-    // Состояние (валидность, счетчик ссылок)
-    private int _state;   
-    // Флаг возможности освободить handle. Может так получиться что сы оборачиваем чужой handle и освобождать его не имеем права
-    private bool _ownsHandle;  
-    // Экземпляр проинициализирован
-    private bool _fullyInitialized;
+    protected IntPtr handle;        // Дескриптор, пришедший от ОС
+    private int _state;             // Состояние (валидность, счетчик ссылок)
+    private bool _ownsHandle;       // Флаг возможности освободить handle. Может так получиться что сы оборачиваем чужой handle и освобождать его не имеем права
+    private bool _fullyInitialized; // Экземпляр проинициализирован
  
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     protected SafeHandle(IntPtr invalidHandleValue, bool ownsHandle)
@@ -232,7 +227,7 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     }
  
     // Финализатор по шаблону вызывает Dispose(false)
-    [System.Security.SecuritySafeCritical]
+    [SecuritySafeCritical]
     ~SafeHandle()
     {
         Dispose(false);
@@ -240,59 +235,51 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
  
     // Выставление hanlde может идти как вручную, так и при помощи p/invoke Marshal - автоматически
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-    protected void SetHandle(IntPtr handle) {
+    protected void SetHandle(IntPtr handle)
+    {
         this.handle = handle;
     }
  
-    // This method is necessary for getting an IntPtr out of a SafeHandle.
-    // Used to tell whether a call to create the handle succeeded by comparing
-    // the handle against a known invalid value, and for backwards 
-    // compatibility to support the handle properties returning IntPtrs on
-    // many of our Framework classes.
-    // Note that this method is dangerous for two reasons:
-    //  1) If the handle has been marked invalid with SetHandleasInvalid,
-    //     DangerousGetHandle will still return the original handle value.
-    //  2) The handle returned may be recycled at any point. At best this means
-    //     the handle might stop working suddenly. At worst, if the handle or
-    //     the resource the handle represents is exposed to untrusted code in
-    //     any way, this can lead to a handle recycling security attack (i.e. an
-    //     untrusted caller can query data on the handle you've just returned
-    //     and get back information for an entirely unrelated resource).
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-    [ResourceExposure(ResourceScope.None)]
+    // Метод необходим для того чтобы с IntPtr можно было бы работать напрямую. Используется 
+    // для определения того, удалось ли создать дескриптор, сравнив его с одим из ранее
+    // определенных известных значений. Обратите внимание, что метод опасен по двум причинам:
+    //  - Если дескриптор отмечен как недопустимый с помощью SetHandleasInvalid, DangerousGetHandle 
+    //    то все равно вернет исходное значение дескриптора.
+    //  - Возвращенный дескриптор может быть переиспользован в любом месте. Это может как минимум 
+    //    означать что он без обратной связи перестанет работать. В худшем случае при прямой передаче 
+    //    IntPtr в другое место, он может уйти в ненадежный код и стать вектором атаки на приложение 
+    //    через подмену ресурса на одном IntPtr
+    [ResourceExposure(ResourceScope.None), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public IntPtr DangerousGetHandle()
     {
         return handle;
     }
  
-    // ресурс закрыт (более не доступен для работы)
+    // Ресурс закрыт (более не доступен для работы)
     public bool IsClosed {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get { return (_state & 1) == 1; }
     }
  
-    // ресурс не является доступным для работы. Вы можете переопределить свойство, изменив логику.
+    // Ресурс не является доступным для работы. Вы можете переопределить свойство, изменив логику.
     public abstract bool IsInvalid {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get;
     }
  
-    // закрытие ресурса через шаблон Close()
-    [System.Security.SecurityCritical]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    // Закрытие ресурса через шаблон Close()
+    [SecurityCritical, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Close() {
         Dispose(true);
     }
     
     // Закрытие ресурса через шаблон Dispose()
-    [System.Security.SecuritySafeCritical]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [SecuritySafeCritical, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Dispose() {
         Dispose(true);
     }
  
-    [System.Security.SecurityCritical]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [SecurityCritical, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected virtual void Dispose(bool disposing)
     {
         // ... 
@@ -300,33 +287,27 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
  
     // Вы должны вызывать этот метод всякий раз когда понимаете что handle более не является рабочим.
     // Если вы этого не сделаете, можете получить утечку
-    [System.Security.SecurityCritical]  
-    [ResourceExposure(ResourceScope.None)]
+    [SecurityCritical, ResourceExposure(ResourceScope.None)]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void SetHandleAsInvalid();
  
-    // Implement this abstract method in your derived class to specify how to
-    // free the handle. Be careful not write any code that's subject to faults
-    // in this method (the runtime will prepare the infrastructure for you so
-    // that no jit allocations etc. will occur, but don't allocate memory unless
-    // you can deal with the failure and still free the handle).
-    // The boolean returned should be true for success and false if the runtime
-    // should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
-    // MDA is enabled.
+    // Переопределите данный метод чтобы указать каким образом необходимо освобождать 
+    // ресурс. Необходимо быть крайне осторожным при написании кода, т.к. из него 
+    // нельзя вызывать нескомпилированные методы, создавать новые объекты и бросать исключения. 
+    // Возвращаемое значение - маркер успешности операции освобождения ресурсов. 
+    // Причем если возвращаемое значение = false, будет брошено исключение 
+    // SafeHandleCriticalFailure, которое в случае включенного SafeHandleCriticalFailure
+    // Managed Debugger Assistant войдет в точку останова.
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected abstract bool ReleaseHandle();
  
-    [System.Security.SecurityCritical]  // auto-generated
-    [ResourceExposure(ResourceScope.None)]
+    
+    // Работа со счетчиком ссылок. Будет объяснено далее по тексту
+    [SecurityCritical, ResourceExposure(ResourceScope.None)]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousAddRef(ref bool success);
- 
-    [System.Security.SecurityCritical]  // auto-generated
-    [ResourceExposure(ResourceScope.None)]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-    [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousRelease();
 }
 ```  
