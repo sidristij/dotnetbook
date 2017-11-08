@@ -518,9 +518,10 @@ Disposing разделяется на два уровня классов:
 
 ### Авторы
 
- - Автор: @mumusan, Habr: [Станислав Сидристый](https://habrahabr.ru/users/sidristij/)
+ - Авторы: 
+   - Habr: [Станислав Сидристый](https://habrahabr.ru/users/sidristij/), GitHub: [mumusan](https://github.com/mumusan)
  - Помощь с ошибками: 
-   - [Сергей Роговцев](https://habrahabr.ru/users/lair/), 
-   - [Lam1l](https://github.com/Lam1l),
-   - [MonkAlex](https://habrahabr.ru/users/MonkAlex/),
-   - [Павел Майоров](https://habrahabr.ru/users/mayorovp/)
+   - Habr: [Сергей Роговцев](https://habrahabr.ru/users/lair/), 
+   - GitHub: [Lam1l](https://github.com/Lam1l),
+   - Habr: [MonkAlex](https://habrahabr.ru/users/MonkAlex/),
+   - Habr: [Павел Майоров](https://habrahabr.ru/users/mayorovp/)
