@@ -227,6 +227,35 @@ struct StartingPoint
 
 #### Возможность указать положение элементов
 
+Еще одной отличительной чертой ValTypes является возможность точно указать, по какому смещению относительно начала структуры в памяти располагается то или иное поле. Это введено для работы с внешними API, которые располагаются в unmanaged world чтобы не "отбивать" до нужного поля неиспользуемыми полями. Тут конечно же может возникнуть вопрос, почему вообще могут возникнуть поля, которые не используются вообще. И какие еще могут варианты использования смещений полей в разрезе .NET Framwork:
+
+  - Структуры, идущие из unmanaged мира могут содержать резервные поля, которые могут быть заиспользованы в будущих версиях библиотеки. Если в мире C/C++ принято отбивать такие пропуски путем добавления полей `reserved1, reserved2, ..`, то в .NET мы имеем прекрасную возможность просто задать смещение к началу поля при помощи атрибута FieldOffsetAttribute:
+    ```csharp
+[StructLayout(LayoutKind.Explicit)]
+public struct SYSTEM_INFO
+{
+[FieldOffset(0)] public ulong OemId;
+[FieldOffset(8)] public ulong PageSize;
+[FieldOffset(16)] public ulong ActiveProcessorMask;
+[FieldOffset(24)] public ulong NumberOfProcessors;
+[FieldOffset(32)] public ulong ProcessorType;
+}
+    ```
+  - При помощи `FieldOffsetAttribute` вы можете эмулировать такой тип из мира C/C++ как `union`. Это специальный тип, который позволяет обращаться к одним и тем же данным как к разнотипным сущностям. Давайте посмотрим на примере:
+    ```csharp
+// Если прочитать RGA.Value, мы прочитаем Int32 значение, которое будет аккумуляцией всех остальных полей.
+// Однако если мы попробуем прочитать RGBA.R, RGBA.G, RGBA.B, RGBA.Alpha, то мы прочитаем отдельные компоненты Int32 числа
+[StructLayout(LayoutKind.Explicit)]
+public struct RGBA
+{
+[FieldOffset(0)] public uint Value;
+[FieldOffset(0)] public byte R;
+[FieldOffset(8)] public byte G;
+[FieldOffset(16)] public byte B;
+[FieldOffset(24)] public byte Alpha;
+}
+    ```
+
 #### Разница в аллокации 
 
 #### Базовый тип - Object и возможность реализации интерфейсов.
