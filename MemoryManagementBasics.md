@@ -122,7 +122,7 @@ Console.WriteLine(list[0].Data);
 
 Отсутствие таблицы виртуальных методов хоть и отнимает у структур часть "магии", которую вносит понятие наследования, но и наделяет рядом преимуществ. Первое и самое главное уже было оговорено: мы можем легко и просто отдать во внешний мир (за пределы .NET Framework) экземпляр такой структуры. Это ведь просто участок памяти! Либо мы можем принять из unmanaged кода некий участок памяти и сделать приведение типа к нашей структуре чтобы сделать более удобный доступ к ее полям. С классами такое поведение не пройдет: у классов существует два поля, которые никому не доступны: это SyncBlockIndex и адрес таблицы виртуальных методов. Если эти два поля уйдут в unmanaged код, это станет очень опасным. Ведь с любой таблицы виртуальным методов можно умеючи достучаться до любого типа и поменять его, осуществив атаку на приложение.
 
-Давайте докажем что это просто участок памяти:
+Давайте докажем что это просто участок памяти без какой-либо дополнительной логики:
 
 ```csharp
 unsafe void Main()
@@ -235,11 +235,11 @@ struct StartingPoint
 [StructLayout(LayoutKind.Explicit)]
 public struct SYSTEM_INFO
 {
-[FieldOffset(0)] public ulong OemId;
-[FieldOffset(8)] public ulong PageSize;
-[FieldOffset(16)] public ulong ActiveProcessorMask;
-[FieldOffset(24)] public ulong NumberOfProcessors;
-[FieldOffset(32)] public ulong ProcessorType;
+    [FieldOffset(0)] public ulong OemId;
+    [FieldOffset(8)] public ulong PageSize;
+    [FieldOffset(16)] public ulong ActiveProcessorMask;
+    [FieldOffset(24)] public ulong NumberOfProcessors;
+    [FieldOffset(32)] public ulong ProcessorType;
 }
 ```
 
@@ -251,15 +251,17 @@ public struct SYSTEM_INFO
 [StructLayout(LayoutKind.Explicit)]
 public struct RGBA
 {
-[FieldOffset(0)] public uint Value;
-[FieldOffset(0)] public byte R;
-[FieldOffset(1)] public byte G;
-[FieldOffset(2)] public byte B;
-[FieldOffset(3)] public byte Alpha;
+    [FieldOffset(0)] public uint Value;
+    [FieldOffset(0)] public byte R;
+    [FieldOffset(1)] public byte G;
+    [FieldOffset(2)] public byte B;
+    [FieldOffset(3)] public byte Alpha;
 }
 ```
 
 #### Разница в аллокации 
+
+Еще одним важным свойством
 
 #### Базовый тип - Object и возможность реализации интерфейсов.
 
