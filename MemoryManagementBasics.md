@@ -253,9 +253,9 @@ public struct RGBA
 {
 [FieldOffset(0)] public uint Value;
 [FieldOffset(0)] public byte R;
-[FieldOffset(8)] public byte G;
-[FieldOffset(16)] public byte B;
-[FieldOffset(24)] public byte Alpha;
+[FieldOffset(1)] public byte G;
+[FieldOffset(2)] public byte B;
+[FieldOffset(3)] public byte Alpha;
 }
 ```
 
