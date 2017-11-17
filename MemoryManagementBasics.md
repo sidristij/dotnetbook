@@ -300,3 +300,10 @@ public struct RGBA
 
 #### Сводная таблица свойств типов
 
+
+------------
+TODO:
+
+[ ] C# 7.2 Span<T>, Memory<T>
+[ ] ref var x = ref arr[0].x;
+[ ] __makeref, __reftype, __refvalue, __arglist
