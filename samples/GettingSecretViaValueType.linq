@@ -1,22 +1,4 @@
-<Query Kind="Program">
-  <Connection>
-    <ID>00e253b3-d172-4f5f-8499-9599dcc98237</ID>
-    <Persist>true</Persist>
-    <Driver Assembly="IQDriver" PublicKeyToken="5b59726538a49684">IQDriver.IQDriver</Driver>
-    <Provider>Devart.Data.MySql</Provider>
-    <CustomCxString>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAffUP6cm5E0CcjkBeIkRs4AAAAAACAAAAAAAQZgAAAAEAACAAAADY7/tJdIdUmMF9zNY5cvIJIeVBnF9fxH0S83L637lYKQAAAAAOgAAAAAIAACAAAAA7XqL9WzIAVOC05Dv7IhQcl/t5zuLX2Ro3Us8ti+6Z0XAAAABYfhdLqrs8rN0fVeoxKj4eGzQynSdK4l6Bo9hB2LbcGkNCKVpoyFVdEiGcsTfMTZ2rifHPrtPQJi3UHHfTq/QGs0ACcLKd2MKzvXirb9Yma6N5t9trCX7HBUgJk3512hh8wcodc3tn7CW6fq+EH0T1QAAAABF7QA4Aa0thw0VaxgSctoX+Ejfx/LSesZUa5gnpJs7xYsoI4xs2rhRa0f2jWCRTJuSkj1n+huW44RG1hnPCOtA=</CustomCxString>
-    <Server>mysql.alterf01.mass.hc.ru</Server>
-    <Database>wwwalterfinru_privlib</Database>
-    <UserName>alterf01_privlib</UserName>
-    <Password>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAffUP6cm5E0CcjkBeIkRs4AAAAAACAAAAAAAQZgAAAAEAACAAAAD0nWLP0WamP1uvzXDcFv+sajLH5QtvZjatwlBxuDEE8AAAAAAOgAAAAAIAACAAAACvEX5qAaHg1ZkANGFKnzj1XVXaYNDcNBcJDikoJYs2PBAAAABW9AtuAw0y0O0xoFtiw8nsQAAAAMWYykCjmVGALnpNMwZF9xYYQGDnVSnT/Ed43UG+jCx3M1vRsg5fe6CtptyaU6+CguYM5PzaN8MFbGC65dlbRSY=</Password>
-    <DisplayName>library</DisplayName>
-    <EncryptCustomCxString>true</EncryptCustomCxString>
-    <DriverData>
-      <StripUnderscores>false</StripUnderscores>
-      <QuietenAllCaps>false</QuietenAllCaps>
-    </DriverData>
-  </Connection>
-</Query>
+<Query Kind="Program" />
 
 unsafe void Main()
 {

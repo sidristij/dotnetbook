@@ -59,6 +59,7 @@ public class ResourceHolder : IDisposable
 		if(_disposed) return;
 
 		_anotherResource.Dispose();
+		_disposed = true;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
