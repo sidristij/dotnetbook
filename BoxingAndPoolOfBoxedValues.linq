@@ -55,6 +55,14 @@ struct Foo {
 	public int x;
 }
 
+public static class Box
+{
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Boxed<T> It<T>(ref T value){
+		return new Boxed<T> {Value = value};
+	}
+}
+
 public sealed class Boxed<T>
 {	
 	public T Value;
