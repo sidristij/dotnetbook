@@ -1,47 +1,46 @@
-<Query Kind="Expression" />
+<Query Kind="Program">
+  <Namespace>System.Runtime.CompilerServices</Namespace>
+  <Namespace>System.Runtime.InteropServices</Namespace>
+</Query>
 
-public class Boxed<T>
+unsafe void Main()
 {
-	public ref T Value;
+	object boxed = 10;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override bool Equals(object obj)
-	{
-		return Value.Equals(obj);
+	RefGetter rg = new RefGetter();
+	//rg.reference = new Holder<object> { Val = boxed};
+	
+	// забираем адрес указателя на VMT
+	//var address = (void**)rg.val.Val.ToPointer();
+	
+	unsafe {
+		// забираем адрес Virtual Methods Table
+		//var structVmt = typeof(SimpleIntHolder).TypeHandle.Value.ToPointer();
+		
+		// меняем адрес VMT целого числа, ушедшего в Heap на VMT SimpleIntHolder, превратив Int в структуру
+		//*address = structVmt;
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override string ToString()
-	{
-		return Value.ToString();
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode()
-	{
-		return Value.GetHashCode();
-	}
+	
+	var structure = (SimpleIntHolder)boxed;
+	structure.value.Dump();
 }
 
-struct Foo : IBoo
+struct SimpleIntHolder
 {
-	public int a;
-
-	public void Boo()
-	{
-		a = 10;
-	}
+	public int value;
+}
+/*
+[StructLayoutAttribute(LayoutKind.Explicit)]
+public class RefGetter
+{
+	[FieldOffset(0)]
+	public Holder<object> reference;
+	
+	[FieldOffset(0)]
+	public Holder<IntPtr> val;
 }
 
-interface IBoo
-{
-	void Boo();
+public struct Holder<T> {
+	public T Val;
 }
-
-public BoxedBoo : Boxed<Foo>, IBoo
-{
-	void Boo()
-	{
-		Value.Boo();
-	}
-}
+*/
