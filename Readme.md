@@ -10,7 +10,7 @@
   2. [Основы менеджмента памяти: пользовательский слой](./MemoryManagementBasics.md)
       1. Стек потока
       2. Heap
-      3. RefTypes, ValueTypes, Boxing & Unboxing
+      3. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
       4. Small Objects Heap
       5. Large Objects Heap
       6. Garbage Collection
