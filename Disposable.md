@@ -686,7 +686,29 @@ void Dispose()
   6. Реализация метода `Dispose()` как правило идет в конце файла, тогда как `сtor` объявляется в начале. При модификации класса и вводе новых ресурсов можно легко ошибиться и забыть зарегистрировать disposing для них. 
   7. Наконец, использование шаблона на графах объектов, которые полностью либо частично его реализуют, - та еще морока в определении порядка *разрушения* в многопоточной среде. Я прежде всего имею ввиду ситуации, когда Dispose() может начаться с разных концов графа. И в таких ситуациях лучше всего воспользоваться другими шаблонами. Например, шаблоном Lifetime.
 
-### Типичные ошибка реализации
+### Выгрузка домена и выход из приложения
+
+> TODO:
+
+```csharp
+// Assemblies and LoaderAllocators will be cleaned up during AppDomain shutdown in
+// unmanaged code
+// So it is ok to skip reregistration and cleanup for finalization during appdomain shutdown.
+// We also avoid early finalization of LoaderAllocatorScout due to AD unload when the object was inside DelayedFinalizationList.
+if (!Environment.HasShutdownStarted &&
+    !AppDomain.CurrentDomain.IsFinalizingForUnload())
+{
+    // Destroy returns false if the managed LoaderAllocator is still alive.
+    if (!Destroy(m_nativeLoaderAllocator))
+    {
+        // Somebody might have been holding a reference on us via weak handle.
+        // We will keep trying. It will be hopefully released eventually.
+        GC.ReRegisterForFinalize(this);
+    }
+}
+```
+
+### Типичные ошибки реализации
 
 Итак, как я вам показал общего, универсального шаблона для реализации IDisposable не существует. Мало того, некоторая уверенность в автоматизме управления памятью заставляет людей путаться и принимать запутанные решения в реализации шаблона. Так, например, весь .NET Framework пронизан ошибками в его реализации. И чтбоы не быть голословными, рассмотрим эти ошибки именно на примере .NET Framework. Все реализации доступны по ссылке: [IDisposable Usages](http://referencesource.microsoft.com/#mscorlib/system/idisposable.cs,1f55292c3174123d,references)
 
