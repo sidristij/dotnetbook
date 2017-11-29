@@ -9,7 +9,7 @@
 ```csharp
 public interface IDisposable 
 {
-	void Dispose();
+    void Dispose();
 } 
 ```
 
@@ -36,12 +36,12 @@ public interface IDisposable
 ```csharp 
 public class ResourceHolder : IDisposable
 {
-	DisposableResource _anotherResource = new DisposableResource();
+    DisposableResource _anotherResource = new DisposableResource();
 
-	public void Dispose()
-	{
-		_anotherResource.Dispose();
-	}
+    public void Dispose()
+    {
+        _anotherResource.Dispose();
+    }
 }
 ```
 
@@ -50,24 +50,24 @@ public class ResourceHolder : IDisposable
 ```csharp 
 public class ResourceHolder : IDisposable
 {
-	private DisposableResource _anotherResource = new DisposableResource();
-	private bool _disposed;
+    private DisposableResource _anotherResource = new DisposableResource();
+    private bool _disposed;
 
-	public void Dispose()
-	{
-		if(_disposed) return;
+    public void Dispose()
+    {
+        if(_disposed) return;
 
-		_anotherResource.Dispose();
-		_disposed = true;
-	}
+        _anotherResource.Dispose();
+        _disposed = true;
+    }
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void CheckDisposed() 
-	{
-		if(_disposed) {
-			throw new ObjectDisposedException();
-		}
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CheckDisposed() 
+    {
+        if(_disposed) {
+            throw new ObjectDisposedException();
+        }
+    }
 }
 ```
 
@@ -78,27 +78,27 @@ public class ResourceHolder : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle;
+    IntPtr _handle;
 
-	public FileWrapper(string name)
-	{
-		_handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
-	}
+    public FileWrapper(string name)
+    {
+        _handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
+    }
 
-	public void Dispose()
-	{
-		CloseHandle(_handle);
-	}
+    public void Dispose()
+    {
+        CloseHandle(_handle);
+    }
 
-	[DllImport("kernel32.dll", EntryPoint = "CreateFile", SetLastError = true)]
-	private static extern IntPtr CreateFile(String lpFileName,
-		UInt32 dwDesiredAccess, UInt32 dwShareMode,
-		IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
-		UInt32 dwFlagsAndAttributes,
-		IntPtr hTemplateFile);
-	
-	[DllImport("kernel32.dll", SetLastError=true)]
-	private static extern bool CloseHandle(IntPtr hObject);
+    [DllImport("kernel32.dll", EntryPoint = "CreateFile", SetLastError = true)]
+    private static extern IntPtr CreateFile(String lpFileName,
+        UInt32 dwDesiredAccess, UInt32 dwShareMode,
+        IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
+        UInt32 dwFlagsAndAttributes,
+        IntPtr hTemplateFile);
+    
+    [DllImport("kernel32.dll", SetLastError=true)]
+    private static extern bool CloseHandle(IntPtr hObject);
 }
 ```
 
@@ -117,30 +117,30 @@ public class FileWrapper : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle;
+    IntPtr _handle;
 
-	public FileWrapper(string name)
-	{
-		_handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
-	}
+    public FileWrapper(string name)
+    {
+        _handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
+    }
 
-	public void Dispose()
-	{
-		InternalDispose();
-		GC.SuppressFinalize(this);
-	}
+    public void Dispose()
+    {
+        InternalDispose();
+        GC.SuppressFinalize(this);
+    }
 
-	private void InternalDispose()
-	{
-		CloseHandle(_handle);
-	}
+    private void InternalDispose()
+    {
+        CloseHandle(_handle);
+    }
 
-	~FileWrapper()
-	{
-		InternalDispose();
-	}
+    ~FileWrapper()
+    {
+        InternalDispose();
+    }
 
-	/// other methods
+    /// other methods
 }
 ```
 
@@ -151,43 +151,43 @@ public class FileWrapper : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle;
-	bool _disposed;
+    IntPtr _handle;
+    bool _disposed;
 
-	public FileWrapper(string name)
-	{
-		_handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
-	}
+    public FileWrapper(string name)
+    {
+        _handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
+    }
 
-	public void Dispose()
-	{		
-		if(_disposed) return;
-		_disposed = true;
+    public void Dispose()
+    {        
+        if(_disposed) return;
+        _disposed = true;
 
-		InternalDispose();
-		GC.SuppressFinalize(this);
-	}
+        InternalDispose();
+        GC.SuppressFinalize(this);
+    }
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void CheckDisposed() 
-	{
-		if(_disposed) {
-			throw new ObjectDisposedException();
-		}
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CheckDisposed() 
+    {
+        if(_disposed) {
+            throw new ObjectDisposedException();
+        }
+    }
 
-	private void InternalDispose()
-	{
-		CloseHandle(_handle);
-	}
+    private void InternalDispose()
+    {
+        CloseHandle(_handle);
+    }
 
-	~FileWrapper()
-	{
-		InternalDispose();
-	}
+    ~FileWrapper()
+    {
+        InternalDispose();
+    }
 
-	/// other methods
+    /// other methods
 }
 ```
 
@@ -320,38 +320,38 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	SafeFileHandle _handle;
-	bool _disposed;
+    SafeFileHandle _handle;
+    bool _disposed;
 
-	public FileWrapper(string name)
-	{
-		_handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
-	}
+    public FileWrapper(string name)
+    {
+        _handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
+    }
 
-	public void Dispose()
-	{
-		if(_disposed) return;
-		_disposed = true;
-		_handle.Dispose();
-	}
+    public void Dispose()
+    {
+        if(_disposed) return;
+        _disposed = true;
+        _handle.Dispose();
+    }
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void CheckDisposed() 
-	{
-		if(_disposed) {
-			throw new ObjectDisposedException();
-		}
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CheckDisposed() 
+    {
+        if(_disposed) {
+            throw new ObjectDisposedException();
+        }
+    }
 
-	[DllImport("kernel32.dll", EntryPoint = "CreateFile", SetLastError = true)]
-	private static extern SafeFileHandle CreateFile(String lpFileName,
-		UInt32 dwDesiredAccess, UInt32 dwShareMode,
-		IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
-		UInt32 dwFlagsAndAttributes,
-		IntPtr hTemplateFile);
+    [DllImport("kernel32.dll", EntryPoint = "CreateFile", SetLastError = true)]
+    private static extern SafeFileHandle CreateFile(String lpFileName,
+        UInt32 dwDesiredAccess, UInt32 dwShareMode,
+        IntPtr lpSecurityAttributes, UInt32 dwCreationDisposition,
+        UInt32 dwFlagsAndAttributes,
+        IntPtr hTemplateFile);
 
-	/// other methods
+    /// other methods
 }
 ```
 
@@ -364,58 +364,58 @@ public class FileWrapper : IDisposable
 ```csharp
 public class FileWrapper : IDisposable
 {
-	IntPtr _handle;
-	bool _disposed;
-	object _disposingSync = new object();
+    IntPtr _handle;
+    bool _disposed;
+    object _disposingSync = new object();
 
-	public FileWrapper(string name)
-	{
-		_handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
-	}
+    public FileWrapper(string name)
+    {
+        _handle = CreateFile(name, 0, 0, 0, 0, 0, IntPtr.Zero);
+    }
 
-	public void Seek(int position)
-	{
-		lock(_disposingSync)
-		{
-			CheckDisposed();
-			// Seek API call
-		}
-	}
+    public void Seek(int position)
+    {
+        lock(_disposingSync)
+        {
+            CheckDisposed();
+            // Seek API call
+        }
+    }
 
-	public void Dispose()
-	{
-		lock(_disposingSync)
-		{
-			if(_disposed) return;
-			_disposed = true;
-		}
-		InternalDispose();
-		GC.SuppressFinalize(this);
-	}
+    public void Dispose()
+    {
+        lock(_disposingSync)
+        {
+            if(_disposed) return;
+            _disposed = true;
+        }
+        InternalDispose();
+        GC.SuppressFinalize(this);
+    }
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private void CheckDisposed() 
-	{
-		lock(_disposingSync)
-		{
-			if(_disposed) {
-				throw new ObjectDisposedException();
-			}
-		}
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CheckDisposed() 
+    {
+        lock(_disposingSync)
+        {
+            if(_disposed) {
+                throw new ObjectDisposedException();
+            }
+        }
+    }
 
-	private void InternalDispose()
-	{
-		CloseHandle(_handle);
-	}
+    private void InternalDispose()
+    {
+        CloseHandle(_handle);
+    }
 
-	~FileWrapper()
-	{
-		InternalDispose();
-	}
+    ~FileWrapper()
+    {
+        InternalDispose();
+    }
 
-	/// other methods
+    /// other methods
 }
 ```
 
@@ -434,15 +434,15 @@ public class FileWrapper : IDisposable
 // и не покажет сути
 class Disposable : IDisposable
 {
-	private volatile int _disposed; 
+    private volatile int _disposed; 
 
-	public void Dispose()
-	{
-	    if(Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
-		{
-			// dispose
-		}
-	}
+    public void Dispose()
+    {
+        if(Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+        {
+            // dispose
+        }
+    }
 }
 ``` 
 
@@ -453,35 +453,35 @@ class Disposable : IDisposable
 ```csharp
 public class Disposable : IDisposable
 {
-	bool _disposed;
+    bool _disposed;
 
-	public void Dispose()
-	{
-		Dispose(true);
-		GC.SuppressFinalize(this);
-	}
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-	protected virtual void Dispose(bool disposing)
-	{
-		if(disposing)
-		{
-			// освобождаем управляемые ресурсы
-		}
-		// освобождаем неуправляемые ресурсы
-	}
+    protected virtual void Dispose(bool disposing)
+    {
+        if(disposing)
+        {
+            // освобождаем управляемые ресурсы
+        }
+        // освобождаем неуправляемые ресурсы
+    }
 
-	protected void CheckDisposed()
-	{
-		if(_disposed) 
-		{
-			throw new ObjectDisposedException();
-		}
-	}
+    protected void CheckDisposed()
+    {
+        if(_disposed) 
+        {
+            throw new ObjectDisposedException();
+        }
+    }
 
-	~Disposable()
-	{
-		Dispose(false);
-	}
+    ~Disposable()
+    {
+        Dispose(false);
+    }
 }
 ```
 
@@ -517,37 +517,37 @@ Disposing разделяется на два уровня классов:
 ```csharp
 class Secondary
 {
-	Action _action;
+    Action _action;
 
-	void SaveForUseInFuture(Action action)
-	{
-		_action = action;
-	}
+    void SaveForUseInFuture(Action action)
+    {
+        _action = action;
+    }
 
-	public void CallAction()
-	{
-		_action();
-	}
+    public void CallAction()
+    {
+        _action();
+    }
 }
 
 class Primary
 {
-	Secondary _foo = new Secondary();
+    Secondary _foo = new Secondary();
 
-	public void PlanSayHello()
-	{
-		_foo.SaveForUseInFuture(Strategy);
-	}
+    public void PlanSayHello()
+    {
+        _foo.SaveForUseInFuture(Strategy);
+    }
 
-	public void SayHello()
-	{
-		_foo.CallAction();
-	}
+    public void SayHello()
+    {
+        _foo.CallAction();
+    }
 
-	void Strategy()
-	{
-		Console.WriteLine("Hello!");
-	}
+    void Strategy()
+    {
+        Console.WriteLine("Hello!");
+    }
 }
 ```
 
@@ -557,25 +557,25 @@ class Primary
 // Для простоты указана упрощенная версия реализации
 class Secondary : IDisposable
 {
-	Action _action;
+    Action _action;
 
-	public event Action<Secondary> OnDisposed;
+    public event Action<Secondary> OnDisposed;
 
-	public void SaveForUseInFuture(Action action)
-	{
-		_action = action;
-	}
+    public void SaveForUseInFuture(Action action)
+    {
+        _action = action;
+    }
 
-	public void CallAction()
-	{
-		_action?.Invoke();
-	}
+    public void CallAction()
+    {
+        _action?.Invoke();
+    }
 
-	void Dispose()
-	{
-		_action = null;
-		OnDisposed?.Invoke(this);
-	}
+    void Dispose()
+    {
+        _action = null;
+        OnDisposed?.Invoke(this);
+    }
 }
 ```
 
@@ -590,8 +590,8 @@ private Action<Secondary> _event;
 // методы add/remove помечены как [MethodImpl(MethodImplOptions.Synchronized)],
 // что аналогично lock(this)
 public event Action<Secondary> OnDisposed {
-  add { lock(this) { _event += value; } }
-  remove { lock(this) { _event -= value; } }
+    add { lock(this) { _event += value; } }
+    remove { lock(this) { _event -= value; } }
 }
 ```
 
@@ -640,10 +640,10 @@ subscription.Dispose();
 ```csharp
 void Dispose()
 {
-	if(_disposed) return;
+    if(_disposed) return;
 
-	_someInstance.Unsubscribe(this);
-	_disposed = true;
+    _someInstance.Unsubscribe(this);
+    _disposed = true;
 }
 ```
 
@@ -652,9 +652,9 @@ void Dispose()
 ```csharp
 void Dispose()
 {
-	if(_disposed) return;
-	
-	// Защита от ThreadAbortException
+    if(_disposed) return;
+    
+    // Защита от ThreadAbortException
     try {} 
     finally 
     {
