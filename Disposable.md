@@ -686,6 +686,137 @@ void Dispose()
   6. Реализация метода `Dispose()` как правило идет в конце файла, тогда как `сtor` объявляется в начале. При модификации класса и вводе новых ресурсов можно легко ошибиться и забыть зарегистрировать disposing для них. 
   7. Наконец, использование шаблона на графах объектов, которые полностью либо частично его реализуют, - та еще морока в определении порядка *разрушения* в многопоточной среде. Я прежде всего имею ввиду ситуации, когда Dispose() может начаться с разных концов графа. И в таких ситуациях лучше всего воспользоваться другими шаблонами. Например, шаблоном Lifetime.
 
+### Типичные ошибка реализации
+
+Итак, как я вам показал общего, универсального шаблона для реализации IDisposable не существует. Мало того, некоторая уверенность в автоматизме управления памятью заставляет людей путаться и принимать запутанные решения в реализации шаблона. Так, например, весь .NET Framework пронизан ошибками в его реализации. И чтбоы не быть голословными, рассмотрим эти ошибки именно на примере .NET Framework. Все реализации доступны по ссылке: [IDisposable Usages](http://referencesource.microsoft.com/#mscorlib/system/idisposable.cs,1f55292c3174123d,references)
+
+**Класс FileEntry** [cmsinterop.cs](http://referencesource.microsoft.com/#mscorlib/system/deployment/cmsinterop.cs,eeedb7095d7d3053,references)
+
+> Этот код явно написан в спешке, чтобы по-быстрому закрыть задачую. Автор явно что-то зотел сделать, но потом передумал и оставил кривое решение
+
+```csharp
+internal class FileEntry : IDisposable
+{
+    // Other fields
+    // ...
+    [MarshalAs(UnmanagedType.SysInt)] public IntPtr HashValue;
+    // ...
+
+    ~FileEntry()
+    {
+        Dispose(false);
+    }
+
+    // Реализация скрыта и затрудняет вызов *правильной* версии метода
+    void IDisposable.Dispose() { this.Dispose(true); }
+
+    // Метод публичный: это серъезная ошибка, позволяющая некорректно разрушить 
+    // экземпляр класса. Мало того, снаружи этот метод НЕ вызывается
+    public void Dispose(bool fDisposing)
+    {
+        if (HashValue != IntPtr.Zero)
+        {
+            Marshal.FreeCoTaskMem(HashValue);
+            HashValue = IntPtr.Zero;
+        }
+
+        if (fDisposing)
+        {    
+            if( MuiMapping != null) 
+            {
+                MuiMapping.Dispose(true);
+                MuiMapping = null;
+            }
+                            
+            System.GC.SuppressFinalize(this);
+        }
+    }
+}
+```
+
+**Класс SemaphoreSlim** [System/Threading/SemaphoreSlim.cs](https://github.com/dotnet/coreclr/blob/cbcdbd25e74ff9d963eafa202dd63504ca537f7e/src/mscorlib/src/System/Threading/SemaphoreSlim.cs)
+
+> Эта ошибка в топе ошибок .NET Framework касательно IDisposable: SuppressFinalize для класса, где нет финализатора. Встречается очень часто.
+
+```csharp
+public void Dispose()
+{
+    Dispose(true);
+
+    // У класса нет финализатора - нет никакой необходимости в GC.SuppressFinalize
+    GC.SuppressFinalize(this);
+}
+
+// Реализация шаблона подразумевает наличие финализатора. А его нет. 
+// Можно было обойтись одним public virtual void Dispose()
+protected virtual void Dispose(bool disposing)
+{
+    if (disposing)
+    {
+        if (m_waitHandle != null)
+        {
+            m_waitHandle.Close();
+            m_waitHandle = null;
+        }
+        m_lockObj = null;
+        m_asyncHead = null;
+        m_asyncTail = null;
+    }
+}
+```
+
+**Класс PtsPage** [MS/Internal/PtsHost/PtsPage.cs](http://referencesource.microsoft.com/#PresentationFramework/src/Framework/MS/Internal/PtsHost/PtsPage.cs,3779e0aa055895f5)
+
+> Здесь реализация выглядит более-менее прилично: финализатор, налачие неуправляемого ресурса, защита от множественного входа с нескольких потоков. Автор даже позаботился о потенциальном читателе вроде нас с вами и оставил описание финализации. Одно тут плохо: мы напрямую управляем очисткой **чужого** ресурса. Именно чужого. Интерфейс тут должен быть несколько иным, согласитесь.
+
+```csharp
+~PtsPage()
+{
+    Dispose(false);
+}
+
+public void Dispose()
+{
+    Dispose(true);
+    GC.SuppressFinalize(this);
+}
+// ------------------------------------------------------------------
+// Dispose unmanaged resources.
+// ------------------------------------------------------------------
+/// <remarks>
+/// Finalizer needs to follow rules below:
+///     a) Your Finalize method must tolerate partially constructed instances.
+///     b) Your Finalize method must consider the consequence of failure.
+///     c) Your object is callable after Finalization.
+///     d) Your object is callable during Finalization.
+///     e) Your Finalizer could be called multiple times.
+///     f) Your Finalizer runs in a delicate security context.
+/// See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
+/// </remarks>
+private void Dispose(bool disposing)
+{
+    if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+    {
+        // Destroy PTS page.
+        // According to following article the entire reachable graph from 
+        // a finalizable object is promoted, and it is safe to access its 
+        // members if they do not have their own finalizers.
+        // Hence it is OK to access _section during finalization.
+        // See: http://blogs.msdn.com/Microsoft/archive/2004/02/20/77460.aspx
+        if (!IsEmpty)
+        {
+            _section.PtsContext.OnPageDisposed(_ptsPage, disposing, true);
+        }
+
+        // Cleanup the state.
+        _ptsPage.Value = IntPtr.Zero;
+        _breakRecord = null;
+        _visual = null;
+        _backgroundFormatOperation = null;
+    }
+}
+```
+
 #### Общие итоги
 
   1. IDisposable является стандартом платформы и от качества его реализации зависит качество всего приложения. Мало того, от этого в некоторых ситуациях зависит безопасность вашего приложения, которое может быть подвергнуто атакам через неуправляемые ресурсы;
