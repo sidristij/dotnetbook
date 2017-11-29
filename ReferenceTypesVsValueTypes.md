@@ -43,7 +43,7 @@
 // Объявим структуру
 struct ValueHolder
 {
-	public int Data;
+    public int Data;
 }
 
 // Создадим массив таких структур и проинициализируем поле Data = 5
@@ -64,7 +64,7 @@ Console.WriteLine(array[0].Data);
 // Объявим структуру
 struct ValueHolder
 {
-	public int Data;
+    public int Data;
 }
 
 // Создадим список таких структур и проинициализируем поле Data = 5
@@ -84,7 +84,7 @@ Console.WriteLine(list[0].Data);
 // Объявим структуру
 struct ValueHolder
 {
-	public int Data;
+    public int Data;
 }
 
 // Создадим список таких структур и проинициализируем поле Data = 5
@@ -105,10 +105,11 @@ Console.WriteLine(list[0].Data);
 
 ```csharp
 // Вариант 1
-struct PersonInfo {
-	pubilc int Height;
-	pubilc int Width;
-	pubilc int HairColor;
+struct PersonInfo 
+{
+    pubilc int Height;
+    pubilc int Width;
+    pubilc int HairColor;
 }
 
 int x = 5;
@@ -127,25 +128,28 @@ int y = 6;
 
 ```csharp
 // Вариант 1
-struct PersonInfo {
-	pubilc int Height;
-	pubilc int Width;
-	pubilc int HairColor;
+struct PersonInfo 
+{
+    pubilc int Height;
+    pubilc int Width;
+    pubilc int HairColor;
 }
 
-class Employee {
-	public int x;
-	public PersonInfo person;
-	public int y;
+class Employee 
+{
+    public int x;
+    public PersonInfo person;
+    public int y;
 }
 
 // Вариант 2
-class Employee {
-	public int x;
-	pubilc int Height;
-	pubilc int Width;
-	pubilc int HairColor;
-	public int y;
+class Employee 
+{
+    public int x;
+    pubilc int Height;
+    pubilc int Width;
+    pubilc int HairColor;
+    public int y;
 }
 ```
 
@@ -157,10 +161,11 @@ class Employee {
 
 ```csharp
 // Вариант 1
-struct PersonInfo {
-	pubilc int Height;
-	pubilc int Width;
-	pubilc int HairColor;
+struct PersonInfo 
+{
+    pubilc int Height;
+    pubilc int Width;
+    pubilc int HairColor;
 }
 
 void Method(int x, PersonInfo person, int y);
@@ -186,32 +191,32 @@ void Method(int x, int HairColor, int Width, int Height, int y);
 ```csharp
 unsafe void Main()
 {
-	int secret = 666;
-	HeightHolder hh;
-	hh.Height = 5;
-	
-	WidthHolder wh;
-	unsafe
-	{
-		// Если бы у структур была информация о типе, это приведение не смогло бы работать: 
-		// CLR перед приведением типа проверила бы иерархию и, не найдя в ней WidthHolder, 
-		// выбросила бы InvalidCastException. Но поскольку структура - просто участок памяти,
-		// в unsafe мире никто не мешает вам интерпретировать его какой угодно структурой
-		wh = *(WidthHolder *)&hh;
-	}
-	Console.WriteLine("Width: " + wh.Width);
-	Console.WriteLine("Secret: " + wh.Secret);
+    int secret = 666;
+    HeightHolder hh;
+    hh.Height = 5;
+
+    WidthHolder wh;
+    unsafe
+    {
+        // Если бы у структур была информация о типе, это приведение не смогло бы работать:
+        // CLR перед приведением типа проверила бы иерархию и, не найдя в ней WidthHolder,
+        // выбросила бы InvalidCastException. Но поскольку структура - просто участок памяти,
+        // в unsafe мире никто не мешает вам интерпретировать его какой угодно структурой
+        wh = *(WidthHolder*)&hh;
+    }
+    Console.WriteLine("Width: " + wh.Width);
+    Console.WriteLine("Secret: " + wh.Secret);
 }
 
 struct WidthHolder
 {
-	public int Width;
-	public int Secret;
+    public int Width;
+    public int Secret;
 }
 
 struct HeightHolder
 {
-	public int Height;
+    public int Height;
 }
 ```
 
@@ -427,11 +432,11 @@ var obj = (object)10;
 
 struct Foo : IBoo
 {
-	int x;
-	void Boo() 
-	{
-		x = 666;
-	}
+    int x;
+    void Boo() 
+    {
+	x = 666;
+    }
 }
 
 IBoo boo = new Foo();
