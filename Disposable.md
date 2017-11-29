@@ -692,7 +692,7 @@ void Dispose()
 
 **Класс FileEntry** [cmsinterop.cs](http://referencesource.microsoft.com/#mscorlib/system/deployment/cmsinterop.cs,eeedb7095d7d3053,references)
 
-> Этот код явно написан в спешке, чтобы по-быстрому закрыть задачую. Автор явно что-то зотел сделать, но потом передумал и оставил кривое решение
+> Этот код явно написан в спешке, чтобы по-быстрому закрыть задачу. Автор явно что-то хотел сделать, но потом передумал и оставил кривое решение
 
 ```csharp
 internal class FileEntry : IDisposable
@@ -727,7 +727,7 @@ internal class FileEntry : IDisposable
                 MuiMapping.Dispose(true);
                 MuiMapping = null;
             }
-                            
+
             System.GC.SuppressFinalize(this);
         }
     }
@@ -780,6 +780,7 @@ public void Dispose()
     Dispose(true);
     GC.SuppressFinalize(this);
 }
+
 // ------------------------------------------------------------------
 // Dispose unmanaged resources.
 // ------------------------------------------------------------------
