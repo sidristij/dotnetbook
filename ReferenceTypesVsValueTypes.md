@@ -620,6 +620,32 @@ struct SimpleIntHolder : IGetterByInterface
 
 Причем заметьте, что делаю я это намеренно через интерфейс, показав, что так тоже будет работать.
 
+##### Nullable\<T>
+
+Также стоит сказать про то, как ведет себя `boxing` для Nullable значимых типов. Это очень приятная особенность nullable значимых типов, поскольку boxing значимого типа, который как-бы null - просто возвратит null: 
+
+```csharp
+int? x = 5;
+int? y = null;
+
+var boxedX = (object)x; // -> 5
+var boxedY = (object)y; // -> null
+```
+
+Отсюда следует забавный вывод: т.к. null не имеет типа, то единственный вариант вытащить из boxing'a другой тип нежели был запакован, такой:
+
+```csharp
+int? x = null;
+var pseudoBoxed = (object)x;
+double? y = (double?)pseudoBoxed;
+```
+
+Код рабочий.
+
+#### Погружаемся в boxing еще глубже
+
+
+
 #### C# 7.2 и ключевое слово ref
 
 #### Неявный Boxing 
