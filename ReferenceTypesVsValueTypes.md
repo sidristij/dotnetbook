@@ -743,10 +743,3 @@ void ChangeValue(Object^ obj)
 #### Ссылки
 
  - [Библиотечка для получения чистого указателя на объект](https://github.com/mumusan/dotnetex/blob/master/libs/)
-
-------------
-TODO:
-
-  - [ ] C# 7.2 Span<T>, Memory<T>
-  - [ ] ref var x = ref arr[0].x;
-  - [ ] __makeref, __reftype, __refvalue, __arglist
