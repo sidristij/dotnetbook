@@ -640,15 +640,62 @@ var pseudoBoxed = (object)x;
 double? y = (double?)pseudoBoxed;
 ```
 
-Код рабочий просто потому что с null можно сделать приведение типа куда угодно. Но зато таким кодом можно запросто удивить своих коллег и скрасить вечер.
+Код рабочий просто потому что с null можно сделать приведение типа куда угодно. Но зато таким кодом можно запросто удивить своих коллег и скрасить вечер забавным фактом.
 
 #### Погружаемся в boxing еще глубже
 
+На закуску хочу вам рассказать про тип [System.Enum](http://referencesource.microsoft.com/#mscorlib/system/enum.cs,36729210e317a805). Не проходя по ссылке скажите, пожалуйста, является ли тип Value Type или же Reference Type? По всем канонам и логике тип просто обязан быть значимым. Ведь это обычное перечисление: набор aliases с чисел на названия в языке программирования. И мы бы закончили этот разговор словами: "вы все думаете абсолютно правильно! Так не будем терять времени и пойдем дальше!", - но нет. `System.Enum`, от которого наследуются все `enum` типы данных, определенных как в вашем коде, так и в .NET Framework являются ссылочными типами. Т.е. типом данных `class`. Мало того (!) класс этот абстрактный и наследуется от `System.ValueType`.
 
+```csharp
+    [Serializable]
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
+    {
+        // ...
+    }
+```
+
+Значит ли это что все перечисления аллоцируются в куче SOH? Значит ли это что используя перечисления мы забиваем кучу, а вместе и с ней - GC? Ведь мы просто используем их. Нет, такого не модет быть. Тогда, получается, что есть где-то пул перечислений, в которых они лежат и нам отдаются их экземпляры. И снова нет: перечисления можно использовать в структурах при маршаллинге. Это - обычные числа. 
+
+А правда заключается в том, что CLR при формировании структур типа данных прямо скажем подхачивает ее если встечается `enum` [превращая класс в значимый тип](https://github.com/dotnet/coreclr/blob/4b49e4330441db903e6a5b6efab3e1dbb5b64ff3/src/vm/methodtablebuilder.cpp#L1425-L1445):
+
+```csharp
+// Check to see if the class is a valuetype; but we don't want to mark System.Enum
+// as a ValueType. To accomplish this, the check takes advantage of the fact
+// that System.ValueType and System.Enum are loaded one immediately after the
+// other in that order, and so if the parent MethodTable is System.ValueType and
+// the System.Enum MethodTable is unset, then we must be building System.Enum and
+// so we don't mark it as a ValueType.
+if(HasParent() &&
+    ((g_pEnumClass != NULL && GetParentMethodTable() == g_pValueTypeClass) ||
+    GetParentMethodTable() == g_pEnumClass))
+{
+    bmtProp->fIsValueClass = true;
+
+    HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
+                                                            g_CompilerServicesUnsafeValueTypeAttribute,
+                                                            NULL, NULL);
+    IfFailThrow(hr);
+    if (hr == S_OK)
+    {
+        SetUnsafeValueClass();
+    }
+}
+```
+
+Зачем это делается? В частности из-за идеи наследования: чтобы сделать пользоваельский `enum`, необходимо снабдить его информацией об именах его возможных значений, например. А как сделать наследование у значимых типов? Никак. Вот и придумали они сделать его ссылочным, но на этапе работы JIT превращать его в значимый. Чтобы никто не догадался.
+
+#### Что если хочется лично посмотреть как работает boxing?
+
+В наше время для того чтобы посмотреть на реализацию упаковки значимых типов, к счастью, нет необходимости загружать дизассемблер и лезть в саме дебри не пойми чего. В наше прекрасное время у нас есть исходные тексты всего ядра платформы .NET и многие его части абсолютно идентичны между .NET Framework CLR и CoreCLR.
 
 #### C# 7.2 и ключевое слово ref
 
-#### Неявный Boxing 
+> TODO
+
+#### Неявный Boxing
+
+> TODO
 
 ### Раздел "Почему?"
 
