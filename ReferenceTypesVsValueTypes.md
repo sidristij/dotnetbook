@@ -687,7 +687,16 @@ if(HasParent() &&
 
 #### Что если хочется лично посмотреть как работает boxing?
 
-В наше время для того чтобы посмотреть на реализацию упаковки значимых типов, к счастью, нет необходимости загружать дизассемблер и лезть в саме дебри не пойми чего. В наше прекрасное время у нас есть исходные тексты всего ядра платформы .NET и многие его части абсолютно идентичны между .NET Framework CLR и CoreCLR.
+В наше время для того чтобы посмотреть на реализацию упаковки значимых типов, к счастью, нет необходимости загружать дизассемблер и лезть в саме дебри не пойми чего. В наше прекрасное время у нас есть исходные тексты всего ядра платформы .NET и многие его части абсолютно идентичны между .NET Framework CLR и CoreCLR. Вы можете пройти по ссылкам ниже и посмотреть на реализации упаковки прямо в исходных кодах:
+
+  - Существует отдельная группа оптимизаций, каждая из которых используется на отдельном типе процессора:
+    - *[JIT_BoxFastMP_InlineGetThread](https://github.com/dotnet/coreclr/blob/master/src/vm/amd64/JitHelpers_InlineGetThread.asm#L86-L148)* (AMD64 - многопроцессорный или Server GC, implicit Thread Local Storage)
+    - *[JIT_BoxFastMP](https://github.com/dotnet/coreclr/blob/8cc7e35dd0a625a3b883703387291739a148e8c8/src/vm/amd64/JitHelpers_Slow.asm#L201-L271)* (AMD64 - многопроцессорный или Server GC)
+    - *[JIT_BoxFastUP](https://github.com/dotnet/coreclr/blob/8cc7e35dd0a625a3b883703387291739a148e8c8/src/vm/amd64/JitHelpers_Slow.asm#L485-L554)* (AMD64 - однопроцессорный или Workstation GC)
+    - *[JIT_TrialAlloc::GenBox(..)](https://github.com/dotnet/coreclr/blob/38a2a69c786e4273eb1339d7a75f939c410afd69/src/vm/i386/jitinterfacex86.cpp#L756-L886)* (x86), которая присоединяется через JitHelpers
+  - В общем случае JIT инлайнит вызов вспомогательной функции [Compiler::impImportAndPushBox(..)](https://github.com/dotnet/coreclr/blob/a14608efbad1bcb4e9d36a418e1e5ac267c083fb/src/jit/importer.cpp#L5212-L5221)
+  - Generic-версия, менее использует менее оптимизированную [MethodTable::Box(..)](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.cpp#L3734-L3783)
+    - И наконец вызывается [CopyValueClassUnchecked(..)](https://github.com/dotnet/coreclr/blob/master/src/vm/object.cpp#L1514-L1581), по коду которой прекрасно видно почему лучше всего выбирать размер структур до 8 байт включительно.
 
 #### Ключевое слово ref
 
