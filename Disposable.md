@@ -897,8 +897,6 @@ public void Dispose()
         MainForm.Dispose();
     }
     MainForm = null;
-    Thread?.Abort();
-    Thread = null;
 }
 ```
 
