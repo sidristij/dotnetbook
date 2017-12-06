@@ -9,36 +9,37 @@
 # Содержание
 
   1. Common Language Runtime
-  2. [Основы менеджмента памяти: пользовательский слой](./MemoryManagementBasics.md)
+  1. [Основы менеджмента памяти: пользовательский слой](./MemoryManagementBasics.md)
       1. Стек потока
-      2. Heap
-      3. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
-      4. Small Objects Heap
-      5. Large Objects Heap
-      6. Garbage Collection
-      7. Statics
-  3. Погружаемся в систему типов
+      1. Heap
+      1. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
+      1. [Структура объектов в памяти](./ObjectsStructure.md)
+      1. Small Objects Heap
+      1. Large Objects Heap
+      1. Garbage Collection
+      1. Statics
+  1. Погружаемся в систему типов
       1. Структура объектов
-      2. Структура и назначение таблицы виртуальных методов
-      3. Generic классы и интерфейсы: строение типов
-      4. Как работает приведение типа. Скорость приведения типа.
-      5. Вычисление размера ReferenceType. sizeof(reftype).
-      6. TBD
-  4. Слой управления памятью: как работает CLR
+      1. Структура и назначение таблицы виртуальных методов
+      1. Generic классы и интерфейсы: строение типов
+      1. Как работает приведение типа. Скорость приведения типа.
+      1. Вычисление размера ReferenceType. sizeof(reftype).
+      1. TBD
+  1. Слой управления памятью: как работает CLR
       1. Подробно про Small Objects Heap
           1. Пример: дамп памяти, влияние pinned objects на аллокацию
-      2. Large Objects Heap
+      1. Large Objects Heap
           1. Пример: как легко испортить кучу, как этого избегать
-      3. Stack потока
+      1. Stack потока
           1. Пример: запоминаем строение стека путем его редактирования.
-      4. Garbage Collection
+      1. Garbage Collection
           1. Mark & Sweep
-          2. Оптимизация поколений
-          3. Финлизация
-          4. Проблемы, связанные с GC и финализацией
-          5. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
-  5. Слой операционных систем: откуда берется память.
-  6. Слой процессора: на чем все основано. Общие правила.
+          1. Оптимизация поколений
+          1. Финлизация
+          1. Проблемы, связанные с GC и финализацией
+          1. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
+  1. Слой операционных систем: откуда берется память.
+  1. Слой процессора: на чем все основано. Общие правила.
 
 # Лицензия
 
