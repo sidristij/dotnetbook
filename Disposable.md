@@ -358,6 +358,95 @@ public class FileWrapper : IDisposable
 
 Что его отличает? Зная, что если в DllImport методе в качестве возвращаемого значения установить **любой** (в том числе и свой) SafeHandle-based тип, то Marshal его корректно создаст и проинициализирует, установив счетчик использований в 1, мы ставим тип SafeFileHandle в качестве возвращаемого для функции ядра CreateFile. Получив его, мы будем при вызове ReadFile и WriteFile использовать именно его (т.к. при вызове счетчик опять же увеличится, а при выходе - уменьшится, что даст нам гарантию существования handle на все время чтения и записи в файл). Тип этот спроектирован корректно, а это значит, что он гарантированно закроет файловый дескриптор, даже когда процесс аварийно завершит свою работу. А это значит, что нам не надо реализовывать свой finalizer и все, что с ним связано. Наш тип значительно упрощается.
 
+#### Срабатывание finalizer во время работы экземплярнх методов
+
+В процессе сборки мусора есть одна оптимизация, направленная на то чтобы как можно раньше собрать наибольшее количество объектов. Давайте рассмотрим следующий код:
+
+```csharp
+
+public void SampleMethod()
+{
+    var obj = new object();
+    obj.ToString();
+    
+    // ...
+    // Если в этой точке сработает GC, obj с некоторой степенью вероятности будет собрана
+    // т.к. она более не используется
+    // ...
+    
+    Console.ReadLine();
+}
+
+С одной стороны код выглядит достаточно безопасно и не сразу становится ясно, почему это должно нас хоть как-то казаться. Однако достаточно вспомнить что существуют классы, оборачивающие собой неуправляемые ресурсы как сразу приходит понимание, что если класс будет спроектирован не корректно, то вполне можно получить исключение из unmanaged мира, которое будет говорить о том что handle, который был получен ранее уже не активен:
+
+```csharp
+// Пример абсолютно не правильной реализации 
+void Main()
+{
+    var inst = new SampleClass();
+    inst.ReadData(); 
+    // далее inst не используется
+}
+
+public sealed class SampleClass : CriticalFinalizerObject, IDisposable
+{
+    private IntPtr _handle;
+
+    public SampleClass()
+    {
+        _handle = CreateFile("test.txt", 0, 0, IntPtr.Zero, 0, 0, IntPtr.Zero);
+    }
+
+    public void Dispose()
+    {
+        if (_handle != IntPtr.Zero)
+        {
+            CloseHandle(_handle);
+            _handle = IntPtr.Zero;
+        }
+    }
+
+    ~SampleClass()
+    {
+        Console.WriteLine("Finalizing instance.");
+        Dispose();
+    }
+
+    public unsafe void ReadData()
+    {
+        Console.WriteLine("Calling GC.Collect...");
+        
+        // я специально перевел на локальную переменную чтобы
+        // не задействовать this после GC.Collect();
+        var handle = _handle;
+
+        // Имитация полного GC.Collect
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Console.WriteLine("Finished doing something.");
+        var overlapped = new NativeOverlapped();
+
+        // Делаем не важно что
+        ReadFileEx(handle, new byte[] { }, 0, ref overlapped, (a, b, c) => {;});
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
+    static extern IntPtr CreateFile(String lpFileName, int dwDesiredAccess, int dwShareMode,
+    IntPtr securityAttrs, int dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool ReadFileEx(IntPtr hFile, [Out] byte[] lpBuffer, uint nNumberOfBytesToRead,
+    [In] ref NativeOverlapped lpOverlapped, IOCompletionCallback lpCompletionRoutine);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool CloseHandle(IntPtr hObject);
+}    
+```
+
+Согласитесь: этот код выглядит более-менее прилично. Во всяком случае явно он никак не сообщает что есть какая-то проблема. А проблема есть и при том очень серъезная. Возможна попытка закрытия файла финализатором класса во время чтения из файла. Что практически гарантированно приведет к ошибке. Причем поскольку в данном случае ошибка будет именно возвращена (`IntPtr == -1`), то мы этого не увидим, `_handle` будет обнулен, дальнейший `Dispose` не закроет файл, а мы получим утечку ресурса. Для решения этой проблемы необходимо пользоваться `SafeHandle`, `CriticalHandle`, `SafeBuffer` и их производными, которые кроме того что имеют счетчики использования в unmanaged мире, так еще и эти счетчики автоматически увеличиваются при передаче в unmanaged методы и уменьшаются - при выходе из него.
+
 ### Многопоточность
 
 Теперь поговорим про тонкий лед. В предыдущих частях рассказа об IDisposable мы проговорили одну очень важную концепцию, которая лежит не только в основе проектирования Disposable типов, но и в проектировании любого типа: концепция целостности объекта. Это значит, что в любой момент времени объект находится в строго определенном состоянии, и любое действие над ним переводит его состояние в одно из заранее определенных - при проектировании типа этого объекта. Другими словами - никакое действие над объектом не должно иметь возможность перевести его состояние в то, которое не было определено. Из этого вытекает проблема в спроектированных ранее типах: они не потокобезопаны. Есть потенциальная возможность вызова публичных методов этих типов в то время, как идет разрушение объекта. Давайте решим эту проблему и решим, стоит ли вообще ее решать
@@ -808,8 +897,6 @@ public void Dispose()
         MainForm.Dispose();
     }
     MainForm = null;
-    Thread?.Abort();
-    Thread = null;
 }
 ```
 
