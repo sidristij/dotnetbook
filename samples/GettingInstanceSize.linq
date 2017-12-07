@@ -16,6 +16,9 @@ unsafe void Main()
 	Console.WriteLine(SizeOf(typeof(GenericSample<Int64>)));
 	Console.WriteLine(SizeOf(typeof(GenericSample<IEnumerable>)));
 	Console.WriteLine(SizeOf(typeof(GenericSample<DateTime>)));
+	Console.WriteLine(SizeOf(typeof(string)));
+	Console.WriteLine(SizeOf(new int[] {1}.GetType()));
+	Console.WriteLine(SizeOf(new int[] {1,2,3}.GetType()));
 }
 
 unsafe int SizeOf(Type type)
@@ -28,7 +31,7 @@ unsafe int SizeOf(Type type)
 public struct MethodTable
 {
 	[FieldOffset(4)]
-	public int Size;
+	public short Size;
 }
 
 class Sample
