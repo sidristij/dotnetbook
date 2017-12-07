@@ -142,10 +142,10 @@ Console.WriteLine(SizeOf(typeof(Sample)));
 ------------------------|-----------|--------------
 Object | 12 | SyBlk + VMT + пустое поле
 Int16 | 12 | Boxed Int16: SyBlk + VMT + данные (выровнено по 4 байта на x86)
-Int32 | 12 | Boxed Int16: SyBlk + VMT + данные
-Int64 | 16 | Boxed Int16: SyBlk + VMT + данные
-Char | 12 |  Boxed Int16: SyBlk + VMT + данные (выровнено по 4 байта на x86)
-Double | 16 | Boxed Int16: SyBlk + VMT + данные
+Int32 | 12 | Boxed Int32: SyBlk + VMT + данные
+Int64 | 16 | Boxed Int64: SyBlk + VMT + данные
+Char | 12 |  Boxed Char: SyBlk + VMT + данные (выровнено по 4 байта на x86)
+Double | 16 | Boxed Double: SyBlk + VMT + данные
 IEnumerable | 0 | Интерфейс не имеет размера: надо брать obj.GetType()
 List<T> | 24 | Не важно сколько элементов в List<T>, занимать он будет одинаково т.к. хранит данные он в array, который не учитывается
 GenericSample<int> | 12 | Как видите, generics прекрасно считаются. Размер не поменялся, т.к. данные находятся на том же месте что и у boxed int. Итог: SyBlk + VMT + данные = 12 байт (x86)
