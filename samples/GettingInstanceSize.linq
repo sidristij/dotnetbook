@@ -5,7 +5,7 @@
 
 unsafe void Main()
 {
-	Console.WriteLine(SizeOf(typeof(Sample)));
+	/*Console.WriteLine(SizeOf(typeof(Sample)));
 	Console.WriteLine(SizeOf(typeof(Int32)));
 	Console.WriteLine(SizeOf(typeof(Int64)));
 	Console.WriteLine(SizeOf(typeof(Int16)));
@@ -31,7 +31,11 @@ unsafe void Main()
 	stringWriter("abc");
 	stringWriter("abcd");
 	stringWriter("abcde");
-	stringWriter("abcdef");
+	stringWriter("abcdef");*/
+
+	Console.WriteLine($"size of int[]{{1,2}}: {SizeOf(new int[] { 1, 2 })}");
+	Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[,] { { 33, 44 } })}");
+	Console.WriteLine($"size of int[2,3,4,5]{{...}}: {SizeOf(new int[2,3,4,5])}");
 }
 
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,9 +71,9 @@ unsafe int SizeOf(object obj)
 			return 4 * ((16 + 2 * length + 3) / 4);
 		}
 	} else
-	if(type == typeof(Array))
+	if(type.BaseType == typeof(Array) || type == typeof(Array))
 	{
-		return 0;
+		return ((ArrayInfo *)href)->SizeOf();
 	}
 	return SizeOf(type);
 }
@@ -77,8 +81,144 @@ unsafe int SizeOf(object obj)
 [StructLayout(LayoutKind.Explicit)]
 public struct MethodTable
 {
+	[FieldOffset(0)]
+	public MethodTableFlags Flags;
+	
 	[FieldOffset(4)]
 	public short Size;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct ArrayInfo
+{
+	[FieldOffset(0)] private MethodTable* MethodTable;
+
+	[FieldOffset(4)] private int Lengthes;
+
+	public bool IsMultidimentional
+	{
+		get
+		{
+			return (MethodTable->Flags & MethodTableFlags.IfArrayThenMultidim) == 0;
+		}
+	}
+
+	public bool IsValueTypes
+	{
+		get
+		{
+			return (MethodTable->Flags & MethodTableFlags.IfArrayThenSharedByReferenceTypes) == 0;
+		}
+	}
+
+	public int Dimensions
+	{
+		get
+		{
+			if (IsMultidimentional)
+			{
+				fixed (int* cur = &Lengthes)
+				{
+					var count = 0;
+					while (cur[count] != 0) count++;
+					return count;
+				}
+			}
+
+			return 1;
+		}
+	}
+
+	public int GetLength(int dim)
+	{
+		var maxDim = Dimensions;
+		if (maxDim < dim)
+			throw new ArgumentOutOfRangeException("dim");
+
+		fixed (int* addr = &Lengthes)
+		{
+			return addr[dim];
+		}
+	}
+
+	public int SizeOf()
+	{
+		var total = 0;
+		int elementsize;
+
+		fixed(void * entity = &MethodTable)
+		{
+			var arr = Union.GetObj<Array>((IntPtr)entity);
+			var elementType = arr.GetType().GetElementType();
+
+			if (elementType.IsValueType)
+			{
+				var typecode = Type.GetTypeCode(elementType);
+
+				switch (typecode)
+				{
+					case TypeCode.Byte:
+					case TypeCode.SByte:
+					case TypeCode.Boolean:
+						elementsize = 1;
+						break;
+					case TypeCode.Int16:
+					case TypeCode.UInt16:
+					case TypeCode.Char:
+						elementsize = 2;
+						break;
+					case TypeCode.Int32:
+					case TypeCode.UInt32:
+					case TypeCode.Single:
+						elementsize = 4;
+						break;
+					case TypeCode.Int64:
+					case TypeCode.UInt64:
+					case TypeCode.Double:
+						elementsize = 8;
+						break;
+					case TypeCode.Decimal:
+						elementsize = 12;
+						break;
+					default:
+						var info = (MethodTable*)elementType.TypeHandle.Value;
+						elementsize = info->Size - 8; // sync blk + vmt ptr
+						break;
+				}
+			}
+			else
+			{
+				elementsize = IntPtr.Size;
+			}
+
+			// Header
+			total += 8; // sync blk + vmt ptr
+			total += elementType.IsValueType ? 0 : 4; // MethodsTable for refTypes
+			total += IsMultidimentional ? (Dimensions + 1) * 4 : 4;
+			var elem = *(int *)((int)entity + total);
+		}
+
+		// Contents
+		if (!IsMultidimentional)
+		{
+			total += (Lengthes) * elementsize;
+		}
+		else
+		{
+			var res = 1;
+			for (int i = 1, len = Dimensions; i < len; i++)
+			{
+				res *= GetLength(i);
+			}
+
+			total += res * elementsize;
+		}
+
+		// align size to IntPtr
+		if ((total & 3) != 0) total += 4 - total % 4;
+
+		return total;
+	}
 }
 
 class Sample
@@ -107,6 +247,13 @@ public class Union
 		return union.IntPtr.Value;
 	}
 
+	public static T GetObj<T>(IntPtr reference)
+	{
+		var union = new Union();
+		union.IntPtr.Value = reference;
+		return (T)union.Reference.Value;
+	}
+
 	[FieldOffset(0)]
 	public Holder<IntPtr> IntPtr;
 
@@ -118,4 +265,45 @@ public class Union
 	{
 		public T Value;
 	}
+}
+
+[Flags]
+public enum MethodTableFlags : uint
+{
+	Array = 0x00010000,
+
+	InternalCorElementTypeExtraInfoMask = 0x00060000,
+	InternalCorElementTypeExtraInfo_IfNotArrayThenTruePrimitive = 0x00020000,
+	InternalCorElementTypeExtraInfo_IfNotArrayThenClass = 0x00040000,
+	InternalCorElementTypeExtraInfo_IfNotArrayThenValueType = 0x00060000,
+
+	IfArrayThenMultidim = 0x00020000,
+	IfArrayThenSharedByReferenceTypes = 0x00040000,
+
+	ContainsPointers = 0x00080000,
+	HasFinalizer = 0x00100000, // instances require finalization
+
+	IsMarshalable = 0x00200000, // Is this type marshalable by the pinvoke marshalling layer
+
+	HasRemotingVtsInfo = 0x00400000, // Optional data present indicating VTS methods and optional fields
+	IsFreezingRequired = 0x00800000, // Static data should be frozen after .cctor
+
+	TransparentProxy = 0x01000000, // tranparent proxy
+	CompiledDomainNeutral = 0x02000000, // Class was compiled in a domain neutral assembly
+
+	// This one indicates that the fields of the valuetype are 
+	// not tightly packed and is used to check whether we can
+	// do bit-equality on value types to implement ValueType::Equals.
+	// It is not valid for classes, and only matters if ContainsPointer
+	// is false.
+	//
+	NotTightlyPacked = 0x04000000,
+
+	HasCriticalFinalizer = 0x08000000, // finalizer must be run on Appdomain Unload
+	UNUSED = 0x10000000,
+	ThreadContextStatic = 0x20000000,
+
+	IsFreezingCompleted = 0x80000000, // Static data has been frozen
+
+	NonTrivialInterfaceCast = Array | TransparentProxy,
 }
