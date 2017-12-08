@@ -33,9 +33,9 @@ unsafe void Main()
 	stringWriter("abcde");
 	stringWriter("abcdef");*/
 
-	Console.WriteLine($"size of int[]{{1,2}}: {SizeOf(new int[] { 1, 2 })}");
-	Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[,] { { 33, 44 } })}");
-	Console.WriteLine($"size of int[2,3,4,5]{{...}}: {SizeOf(new int[2,3,4,5])}");
+	Console.WriteLine($"size of int[]{{1,2}}: {SizeOf(new int[2])}");
+	Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[1,2])}");
+	Console.WriteLine($"size of int[2,3,4,5]{{...}}: {SizeOf(new int[2, 3, 4, 5])}");
 }
 
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
