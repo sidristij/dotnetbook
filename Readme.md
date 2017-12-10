@@ -1,4 +1,4 @@
-![CLR Book](./imgs/CLRBook.png)
+![CLR Book](./imgs/CLRBook.jpg)
 
 # О книге
 
