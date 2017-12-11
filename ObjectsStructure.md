@@ -183,17 +183,17 @@ int[]{1} | 24554 | Для массивов в данном месте лежат
   -------------------------------------------------------------------------
 
   Term - null terminator
-  Sum size = (4 (8) + 4 (8) + 2 + (Len*2)) -> округлить в большую сторону по разрядности. (16 байт в примере)
+  Sum size = (12 (24) + 2 + (Len*2)) -> округлить в большую сторону по разрядности. (20 байт в примере)
   // Для .NET Framework 4 и старше
-  -------------------------------------------------------------------------
-  |  SyncBlkIndx |    VMTPtr     |     Length     | char  | char  | Term  |
-  -------------------------------------------------------------------------
-  |  4 / 8 байт  |  4 / 8 байт   |    4 байта     |  2 б. |  2 б. |  2 б. |
-  -------------------------------------------------------------------------
-  |      -1      |  0xXXXXXXXX   |        2       |   a   |   b   | <nil> |
-  -------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  |  SyncBlkIndx |    VMTPtr     |  ArrayLength   |     Length     | char  | char  | Term  |
+  ------------------------------------------------------------------------------------------
+  |  4 / 8 байт  |  4 / 8 байт   |    4 байта     |    4 байта     |  2 б. |  2 б. |  2 б. |
+  ------------------------------------------------------------------------------------------
+  |      -1      |  0xXXXXXXXX   |        3       |        2       |   a   |   b   | <nil> |
+  ------------------------------------------------------------------------------------------
   Term - null terminator
-  Sum size = (4 (8) + 4 (8) + 2 + (Len*2)) -> округлить в большую сторону по разрядности. (16 байт в примере)
+  Sum size = (12 (24) + 2 + (Len*2)) -> округлить в большую сторону по разрядности. (24 байта в примере)
  ```
 Перепишем наш метод чтобы научить его считать размер строк:
 
@@ -203,24 +203,28 @@ unsafe int SizeOf(object obj)
     var majorNetVersion = Environment.Version.Major;
     var type = obj.GetType();
     var href = Union.GetRef(obj).ToInt64();
+    var DWORD = sizeof(IntPtr);
+    var baseSize = 3 * DWORD;
 
-    if(type == typeof(string))
+    if (type == typeof(string))
     {
         if (majorNetVersion >= 4)
         {
-            var length = *(int*)((int)href + 4);
-            return 4 * ((14 + 2 * length + 3) / 4);
+            var length = (int)*(int*)(href + DWORD /* skip vmt */);
+            return DWORD * ((baseSize + 2 + 2 * length + (DWORD-1)) / DWORD);
         }
         else
         {
             // on 1.0 -> 3.5 string have additional RealLength field
-            var length = *(int*)((int)href + 8);
-            return 4 * ((16 + 2 * length + 3) / 4);
+            var arrlength = *(int*)(href + DWORD /* skip vmt */);
+            var length = *(int*)(href + DWORD /* skip vmt */ + 4 /* skip length */);
+            return DWORD * ((baseSize + 2 + 2 * length + (DWORD -1)) / DWORD);
         }
-    } else
-    if(type == typeof(Array))
+    }
+    else
+    if (type.BaseType == typeof(Array) || type == typeof(Array))
     {
-        return 0;
+        return ((ArrayInfo*)href)->SizeOf();
     }
     return SizeOf(type);
 }
@@ -268,13 +272,13 @@ Length of `abcdef` string: 28
 
 ```
   // Заголовок
-  -------------------------------------------------------------------------------------------------------------------------
-  |  SyncBlkIndx |    VMTPtr     |    Length1    |    Length2    |  ..  |    LengthN    |   Terminator  |? Elem VMT Ptr  ?|
-  -------------------------------------------------------------------------------------------------------------------------
-  |  4 / 8 байт  |  4 / 8 байт   |    4 байта    |    4 байта    |      |    4 байта    |    4 байта    |?    4/8 байт   ?|
-  -------------------------------------------------------------------------------------------------------------------------
-  |  0xFFF..FFF  |  0xXXX..XXX   |       ?       |       ?       |      |       ?       |  0x000..000   |?  0xXXX..XXX   ?|
-  -------------------------------------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  |   SBI   |  VMTPtr |  Total  |  Len_1  |  Len_2  | .. |  Len_N  |  Term   |? VMT_Child ?|
+  ------------------------------------------------------------------------------------------
+  |  4 / 8  |  4 / 8  |    4    |    4    |    4    |    |    4    |    4    |?    4/8    ?|
+  ------------------------------------------------------------------------------------------
+  | 0xFF.FF | 0xXX.XX |    ?    |    ?    |    ?    |    |    ?    | 0x00.00 |? 0xXX..XX  ?|
+  ------------------------------------------------------------------------------------------
 
   - Elem VMT Ptr присутствует только если массив хранит данные ссылочного типа
   - Length2..LengthN присутствуют только если размерность массива более 1 (регулируется битами в VMT->Flags)
@@ -288,7 +292,7 @@ public int SizeOf()
     var total = 0;
     int elementsize;
 
-    fixed(void * entity = &MethodTable)
+    fixed (void* entity = &MethodTable)
     {
         var arr = Union.GetObj<Array>((IntPtr)entity);
         var elementType = arr.GetType().GetElementType();
@@ -324,7 +328,7 @@ public int SizeOf()
                     break;
                 default:
                     var info = (MethodTable*)elementType.TypeHandle.Value;
-                    elementsize = info->Size - 8; // sync blk + vmt ptr
+                    elementsize = info->Size - 2 * sizeof(IntPtr); // sync blk + vmt ptr
                     break;
             }
         }
@@ -334,31 +338,19 @@ public int SizeOf()
         }
 
         // Header
-        total += 8; // sync blk + vmt ptr
-        total += elementType.IsValueType ? 0 : 4; // MethodsTable for refTypes
-        total += IsMultidimentional ? (Dimensions + 1) * 4 : 4;
-        var elem = *(int *)((int)entity + total);
+        total += 3 * sizeof(IntPtr); // sync blk + vmt ptr + total length
+        total += elementType.IsValueType ? 0 : sizeof(IntPtr); // MethodsTable for refTypes
+        total += IsMultidimentional ? Dimensions * sizeof(int) : 0;
     }
 
     // Contents
-    if (!IsMultidimentional)
-    {
-        total += (Lengthes) * elementsize;
-    }
-    else
-    {
-        var res = 1;
-        for (int i = 1, len = Dimensions; i < len; i++)
-        {
-            res *= GetLength(i);
-        }
-
-        total += res * elementsize;
-    }
+    total += (int)TotalLength * elementsize;
 
     // align size to IntPtr
-    if ((total & 3) != 0) total += 4 - total % 4;
-
+    if ((total % sizeof(IntPtr)) != 0)
+    {
+        total += sizeof(IntPtr) - total % (sizeof(IntPtr));
+    }
     return total;
 }
 ```

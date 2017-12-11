@@ -5,7 +5,7 @@
 
 unsafe void Main()
 {
-	/*Console.WriteLine(SizeOf(typeof(Sample)));
+	Console.WriteLine(SizeOf(typeof(Sample)));
 	Console.WriteLine(SizeOf(typeof(Int32)));
 	Console.WriteLine(SizeOf(typeof(Int64)));
 	Console.WriteLine(SizeOf(typeof(Int16)));
@@ -31,7 +31,7 @@ unsafe void Main()
 	stringWriter("abc");
 	stringWriter("abcd");
 	stringWriter("abcde");
-	stringWriter("abcdef");*/
+	stringWriter("abcdef");
 
 	Console.WriteLine($"size of int[]{{1,2}}: {SizeOf(new int[2])}");
 	Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[1,2])}");
@@ -56,24 +56,28 @@ unsafe int SizeOf(object obj)
 	var majorNetVersion = Environment.Version.Major;
 	var type = obj.GetType();
 	var href = Union.GetRef(obj).ToInt64();
-	
-	if(type == typeof(string))
+	var DWORD = sizeof(IntPtr);
+	var baseSize = 3 * DWORD;
+
+	if (type == typeof(string))
 	{
 		if (majorNetVersion >= 4)
 		{
-			var length = *(int*)((int)href + 4);
-			return 4 * ((14 + 2 * length + 3) / 4);
+			var length = (int)*(int*)(href + DWORD /* skip vmt */);
+			return DWORD * ((baseSize + 2 + 2 * length + (DWORD-1)) / DWORD);
 		}
 		else
 		{
 			// on 1.0 -> 3.5 string have additional RealLength field
-			var length = *(int*)((int)href + 8);
-			return 4 * ((16 + 2 * length + 3) / 4);
+			var arrlength = *(int*)(href + DWORD /* skip vmt */);
+			var length = *(int*)(href + DWORD /* skip vmt */ + 4 /* skip length */);
+			return DWORD * ((baseSize + 2 + 2 * length + (DWORD -1)) / DWORD);
 		}
-	} else
-	if(type.BaseType == typeof(Array) || type == typeof(Array))
+	}
+	else
+	if (type.BaseType == typeof(Array) || type == typeof(Array))
 	{
-		return ((ArrayInfo *)href)->SizeOf();
+		return ((ArrayInfo*)href)->SizeOf();
 	}
 	return SizeOf(type);
 }
@@ -88,12 +92,14 @@ public struct MethodTable
 	public short Size;
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Sequential)]
 public unsafe struct ArrayInfo
 {
-	[FieldOffset(0)] private MethodTable* MethodTable;
+	private MethodTable* MethodTable;
 
-	[FieldOffset(4)] private int Lengthes;
+	private IntPtr TotalLength;
+
+	private int Lengthes;
 
 	public bool IsMultidimentional
 	{
@@ -117,10 +123,10 @@ public unsafe struct ArrayInfo
 		{
 			if (IsMultidimentional)
 			{
-				fixed (int* cur = &Lengthes)
+				fixed (IntPtr* cur = &TotalLength)
 				{
 					var count = 0;
-					while (cur[count] != 0) count++;
+					while (((int*)cur)[count] != 0) count++;
 					return count;
 				}
 			}
@@ -146,7 +152,7 @@ public unsafe struct ArrayInfo
 		var total = 0;
 		int elementsize;
 
-		fixed(void * entity = &MethodTable)
+		fixed (void* entity = &MethodTable)
 		{
 			var arr = Union.GetObj<Array>((IntPtr)entity);
 			var elementType = arr.GetType().GetElementType();
@@ -182,7 +188,7 @@ public unsafe struct ArrayInfo
 						break;
 					default:
 						var info = (MethodTable*)elementType.TypeHandle.Value;
-						elementsize = info->Size - 8; // sync blk + vmt ptr
+						elementsize = info->Size - 2 * sizeof(IntPtr); // sync blk + vmt ptr
 						break;
 				}
 			}
@@ -192,34 +198,23 @@ public unsafe struct ArrayInfo
 			}
 
 			// Header
-			total += 8; // sync blk + vmt ptr
-			total += elementType.IsValueType ? 0 : 4; // MethodsTable for refTypes
-			total += IsMultidimentional ? (Dimensions + 1) * 4 : 4;
-			var elem = *(int *)((int)entity + total);
+			total += 3 * sizeof(IntPtr); // sync blk + vmt ptr + total length
+			total += elementType.IsValueType ? 0 : sizeof(IntPtr); // MethodsTable for refTypes
+			total += IsMultidimentional ? Dimensions * sizeof(int) : 0;
 		}
 
 		// Contents
-		if (!IsMultidimentional)
-		{
-			total += (Lengthes) * elementsize;
-		}
-		else
-		{
-			var res = 1;
-			for (int i = 1, len = Dimensions; i < len; i++)
-			{
-				res *= GetLength(i);
-			}
-
-			total += res * elementsize;
-		}
+		total += (int)TotalLength * elementsize;
 
 		// align size to IntPtr
-		if ((total & 3) != 0) total += 4 - total % 4;
-
+		if ((total % sizeof(IntPtr)) != 0)
+		{
+			total += sizeof(IntPtr) - total % (sizeof(IntPtr));
+		}
 		return total;
 	}
 }
+
 
 class Sample
 {
