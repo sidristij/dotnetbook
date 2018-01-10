@@ -10,7 +10,7 @@
 
   1. Common Language Runtime
   1. [Основы менеджмента памяти: пользовательский слой](./MemoryManagementBasics.md)
-      1. Стек потока
+      1. [Стек потока](./ThreadStack.md)
       1. Heap
       1. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
       1. [Структура объектов в памяти](./ObjectsStructure.md)
