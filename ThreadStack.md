@@ -446,3 +446,8 @@ RestorePointAfterClonnedExited:
     return;
  }
 ```
+
+Todo:
+
+  - Выделяются на стеке
+  - 
