@@ -269,16 +269,22 @@ public:
 
 ### Метод подготовки к копированию
 
+Описание кода я буду делать блоками. Т.е. единый код будет разбит на части и каждая из частей будет отдельно прокомментирована. Итак, приступим. Когда внешний код вызывает `Fork.CloneThread()`, то через внутреннюю обертку над неуправляемым кодом и через ряд дополнительных методов если код работает под отладкой (так называемые debugger assistants). Именно поэтому мы в .NET части запомнили адрес переменной в стеке: для C++ метода этот адрес является своеобразной меткой: теперь мы точно знаем какой участок стека мы можем спокойно копировать.
+
 ```csharp
 int AdvancedThreading_Unmanaged::ForkImpl()
 {
     StackInfo copy;
-    StackInfo* info;  
+    StackInfo* info;
+```
 
+Первым делом, до того как произойдет хоть какая-то операция чтобы не получить запорченные регистры мы их копируем локально. Также дополнительно необходимо сохранить адрес кода, куда будет сделан `goto` когда в дочернем потоке стек будет сымитирован и необходимо будет произвести процеруду выхода из `CloneThread` из дочернего потока. В качестве "точки выхода" мы выбираем `JmpPointOnMethodsChainCallEmulation` и не просто так: после операции сохранения этого адреса "на будущее" мы дополнительно закладываем в стек число 0.
+
+```csharp
     // Save ALL registers
-    _asm 
+    _asm
     {
-	    mov copy.EAX, EAX
+        mov copy.EAX, EAX
         mov copy.EBX, EBX
         mov copy.ECX, ECX
         mov copy.EDX, EBX
@@ -286,7 +292,7 @@ int AdvancedThreading_Unmanaged::ForkImpl()
         mov copy.ESI, ESI
         mov copy.EBP, EBP
         mov copy.ESP, ESP
-        
+
         // Save CS:EIP for far jmp
         mov copy.CS, CS
         mov copy.EIP, offset JmpPointOnMethodsChainCallEmulation
@@ -294,45 +300,60 @@ int AdvancedThreading_Unmanaged::ForkImpl()
         // Save mark for this method, from what place it was called
         push 0
     }
+```
 
+После чего, после `JmpPointOnMethodsChainCallEmulation` мы достаем это число из стека и проверяем: там лежит `0`? Если да, мы находимся в том же самом потоке: а значит у нас еще много дел и мы переходим на `NonClonned`. Если же там не `0`, а по факту `1`, это значит что дочерний поток закончил "дорисовку" стека потока до необходимого состояния, положил на стек число `1` и сделал goto в эту точку (замечу что goto он делает из другого метода). А это значит что настало время для выхода из `CloneThread` в дочернем потоке, вызов которого был сымитирован.
+
+```csharp
 JmpPointOnMethodsChainCallEmulation:
 
-    _asm 
+    _asm
     {
         pop EAX
         cmp EAX, 0
         je NonClonned
-        
+
         pop EBP
         mov EAX, 1
         ret
     }
 NonClonned:
+```
 
+Хорошо, мы убедились что мы все еще мы, а значит надо подготовить данные для дочернего потока. Чтобы более не спускаться на уровень ассемблера, работать мы будем со структурой ранее сохраненных регистров. Достанем из нее значение регистра EBP: он по сути является полем "Next" в односвязном списке кардов стека. Перейдя по адресу, который там содержится мы очутимся в кадре метода, который нас вызвал. Если и там возьмем первое поле и перейдем по тому адресу, то окажемся в еще более раннем кадре. Так мы сможем дойти до managed части `CloneThread`: ведь мы сохранили адрес переменной в ее стековом кадре а значит прекрасно знаем где остановиться. Этой задачей и занимается цикл, приведенный ниже.
+
+```csharp
     int *curptr = (int *)copy.EBP;
     int frames = 0;
 
     //
     //  Calculate frames count between current call and Fork.CloneTherad() call
-    //  
+    //
     while ((int)curptr < stacktop)
     {
         curptr = (int*)*curptr;
         frames++;
     }
+```
 
+Получив адрес начала кадра managed метода `CloneThread`, мы теперь знаем сколько надо копировать для имитации вызова `CloneThread` из `MakeFork`. Однако поскольку нам `MakeFork` также нужен (наша задача выйти именно в него), то мы делаем дополнительно еще один переход по односвязносу списку: `*(int *)curptr`. После чего создаем массив под созранение стека и сохраняем его простым копированием.
+
+```csharp
     //
     //  We need to copy stack part from our method to user code method including its locals in stack
     //
     int localsStart = copy.EBP;                             // our EBP points to EBP value for parent method + saved ESI, EDI
     int localsEnd = *(int *)curptr;                         // points to end of user's method's locals (additional leave)
-    
+
     byte *arr = new byte[localsEnd - localsStart];
     memcpy(arr, (void*)localsStart, localsEnd - localsStart);
+```
 
-    
+Еще одна задача, которую надо будет решить - это исправление адресов переменных, которые попали на стек и при этом указывают на стек. Для решения этой проблемы мы получаем диапазон адресов, которые нам выделила операционаая система под стек потока. Сохраняем полученную информацию я запукаем вторую часть процесса клонирования, запланировав делегат в пул потоков:
+
+```csharp
     // Get information about stack pages
-    MEMORY_BASIC_INFORMATION *stackData = new MEMORY_BASIC_INFORMATION();            
+    MEMORY_BASIC_INFORMATION *stackData = new MEMORY_BASIC_INFORMATION();
     VirtualQuery((void *)copy.EBP, stackData, sizeof(MEMORY_BASIC_INFORMATION));
 
     // fill StackInfo structure
@@ -342,8 +363,8 @@ NonClonned:
     info->frame = arr;
     info->size = (localsEnd - localsStart);
 
-    // call managed new Thread().Start() to make fork
-    MakeManagedThread(this, info); 
+    // call managed ThreadPool.QueueUserWorkitem to make fork
+    MakeManagedThread(this, info);
 
     return 0;
 }
@@ -351,10 +372,17 @@ NonClonned:
 
 ### Метод восстановления из копии
 
+Этот метод вызывается как результат работы предыдущего: нам переданы копия участка стека родительского потока а также полный набор его регистров. Наша задача в нашем потоке, взятом из пула потоков дорисовать все вызовы, скопированные из родительского потока таким образом как будто мы сами их осуществили. Завершив работу, MakeFork дочернего потока попадет обратно в этот метод, который, завершив работу, освободит поток и вернет его в пул потоков.
+
 ```csharp
 void AdvancedThreading_Unmanaged::InForkedThread(StackInfo * stackCopy)
 {
     StackInfo copy;
+```
+
+Первым делом мы сохраняем значения рабочих регистров чтобы когда `MakeFork` завршил свою заботу мы смогли их безболезненно восставновить. Чтобы в дальнейшем минимально влиять на регистры мы выгружаем переданные нам параметры к себе на стек. Доступ к нем будет идти только через `SS:ESP` что для нас будем предсказуемым.
+
+```csharp
     short CS_EIP[3];
 
     // Save original registers to restore
@@ -367,10 +395,14 @@ void AdvancedThreading_Unmanaged::InForkedThread(StackInfo * stackCopy)
     // Setup FWORD for far jmp
     *(int*)CS_EIP = copy.EIP;
     CS_EIP[2] = copy.CS;
+```
 
+Наша следующая задача - это исправить в копии стека значения `EBP', которые образуют односвязный список кадров на их будущие новые положения. Для этого мы рассчитываем дельту между адресом нашего стека потока и родительского стека потока, дельту между копией диапазона стека родительского потока и самим родительским потоком.
+
+```csharp
     // calculate ranges
     int beg = (int)copy.frame;
-    int size = copy.size;    
+    int size = copy.size;
     int baseFrom = (int) copy.origStackStart;
     int baseTo = baseFrom + (int)copy.origStackSize;
     int ESPr;
@@ -385,7 +417,11 @@ void AdvancedThreading_Unmanaged::InForkedThread(StackInfo * stackCopy)
 
     // offset between parent stack start and its copy;
     int delta_to_copy = (int)copy.frame - (int)copy.EBP;
+```
 
+Используя эти данные мы в цикле идем по копии стека и исправляем адреса на их будущие новые положения.
+
+```csharp
     // In stack copy we have many saved EPBs, which where actually one-way linked list.
     // we need to fix copy to make these pointers correct for our thread's stack.
     int ebp_cur = beg;
@@ -398,11 +434,15 @@ void AdvancedThreading_Unmanaged::InForkedThread(StackInfo * stackCopy)
             int localOffset = val + delta_to_copy;
             *(int *)ebp_cur += delta_to_target;
             ebp_cur = localOffset;
-        } 
-        else 
+        }
+        else
             break;
     }
-        
+```
+
+Когда правка односвязного списка завершена мы должны исправить значения регистров в их копии чтобы если там присутствуют ссылки на стек, они были бы исправлены. Тут на самом деле алгоритм совсем не точен. Ведь если там по некотоой случайности окажется не удачное число из диапазона адресов стека, то оно будет исправлено по ошибке. Но наша задача не для продукта концепт написать а просто понять работу стека потока. Потому для этих целей нам данная методка подойдет.
+
+```csharp
     CHECKREF(EAX);
     CHECKREF(EBX);
     CHECKREF(ECX);
@@ -410,19 +450,21 @@ void AdvancedThreading_Unmanaged::InForkedThread(StackInfo * stackCopy)
 
     CHECKREF(ESI);
     CHECKREF(EDI);
+```
 
+```csharp
     // prepare for __asm nret
     __asm push offset RestorePointAfterClonnedExited
     __asm push EBP
-    
+
     for(int i = (size >> 2) - 1; i >= 0; i--)
     {
         int val = ((int *)beg)[i];
         __asm push val;
     };
-    
+
     // restore registers, push 1 for Fork() and jmp
-    _asm {        
+    _asm {
         push copy.EAX
         push copy.EBX
         push copy.ECX
