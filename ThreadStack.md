@@ -127,8 +127,8 @@ void MakeFork()
 }
 
 // Примерный вывод:
-// in forked thread: 2, local value: 123, time to enter = 73 ms
-// in parent thread: 1, local value: 123, time to enter = 77 ms
+// in forked thread: 2, local value: 123, time to enter = 2 ms
+// in parent thread: 1, local value: 123, time to enter = 2 ms
 ```
 
 Согласитесь, концепт интересный. Конечно же, тут можно много спорить про целесообразность таких действий, но задача этого примера - поставить жирную точку в понимании работы этой структуры данных. Как же сделать клонирование? Для ответа на данный вопрос надо ответить на другой вопрос: что вообще определяет поток? А поток определяют следующие структуры и области данных:
@@ -503,6 +503,16 @@ RestorePointAfterClonnedExited:
     return;
  }
 ```
+
+Проверим? Это - скриншот до вызова клонирования потока:
+
+![](./imgs/ThreadStack/ForkBeforeEnter.md)
+
+И после:
+
+![](./imgs/ThreadStack/ForkAfterEnter.md)
+
+Как мы видим, теперь вместо одного потока внутри ForkImpl мы видим два. И оба - вышли из этого метода.
 
 # Пара слов об уровне пониже
 
