@@ -596,6 +596,115 @@ public static string FormatDecimal(decimal value, ReadOnlySpan<char> format, Num
 [/src/mscorlib/shared/System/Text/ValueStringBuilder](https://github.com/dotnet/coreclr/blob/efebb38f3c18425c57f94ff910a50e038d13c848/src/mscorlib/shared/System/Text/ValueStringBuilder.cs)
 
 ```csharp
+    internal ref struct ValueStringBuilder
+    {
+        private char[] _arrayToReturnToPool;
+        private Span<char> _chars;
+        private int _pos;
+
+        public ValueStringBuilder(Span<char> initialBuffer)
+        {
+            _arrayToReturnToPool = null;
+            _chars = initialBuffer;
+            _pos = 0;
+        }
+
+        public int Length
+        {
+            get => _pos;
+            set
+            {
+                int delta = value - _pos;
+                if (delta > 0)
+                {
+                    Append('\0', delta);
+                }
+                else
+                {
+                    _pos = value;
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            var s = new string(_chars.Slice(0, _pos));
+            Clear();
+            return s;
+        }
+
+
+        public void Insert(int index, char value, int count)
+        {
+            if (_pos > _chars.Length - count)
+            {
+                Grow(count);
+            }
+
+            int remaining = _pos - index;
+            _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
+            _chars.Slice(index, count).Fill(value);
+            _pos += count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Append(char c)
+        {
+            int pos = _pos;
+            if (pos < _chars.Length)
+            {
+                _chars[pos] = c;
+                _pos = pos + 1;
+            }
+            else
+            {
+                GrowAndAppend(c);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void GrowAndAppend(char c)
+        {
+            Grow(1);
+            Append(c);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Grow(int requiredAdditionalCapacity)
+        {
+            Debug.Assert(requiredAdditionalCapacity > _chars.Length - _pos);
+
+            char[] poolArray = ArrayPool<char>.Shared.Rent(Math.Max(_pos + requiredAdditionalCapacity, _chars.Length * 2));
+
+            _chars.CopyTo(poolArray);
+
+            char[] toReturn = _arrayToReturnToPool;
+            _chars = _arrayToReturnToPool = poolArray;
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Clear()
+        {
+            char[] toReturn = _arrayToReturnToPool;
+            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+        }
+        
+        // Пропущенные методы
+        private void AppendSlow(string s);
+        public bool TryCopyTo(Span<char> destination, out int charsWritten);
+        public void Append(string s);
+        public void Append(char c, int count);
+        public unsafe void Append(char* value, int length);
+        public Span<char> AppendSpan(int length);
+    }
 ```
 
 ## Выводы к stackalloc
