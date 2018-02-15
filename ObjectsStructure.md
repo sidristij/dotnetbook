@@ -410,7 +410,7 @@ size of int[2,3,4,5]{...}: 512
          _x = newValue;
      }
 
-     public virtual GetValue()
+     public virtual int GetValue()
      {
          return _x;
      }
