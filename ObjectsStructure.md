@@ -146,7 +146,7 @@ Char | 12 |  Boxed Char: SyncBlk + VMT + данные (выровнено по 4
 Double | 16 | Boxed Double: SyncBlk + VMT + данные
 IEnumerable | 0 | Интерфейс не имеет размера: надо брать obj.GetType()
 List\<T> | 24 | Не важно сколько элементов в List<T>, занимать он будет одинаково т.к. хранит данные он в array, который не учитывается
-GenericSample\<int> | 12 | Как видите, generics прекрасно считаются. Размер не поменялся, т.к. данные находятся на том же месте? что и у boxed int. Итог: SyncBlk + VMT + данные
+GenericSample\<int> | 12 | Как видите, generics прекрасно считаются. Размер не поменялся, т.к. данные находятся на том же месте, что и у boxed int. Итог: SyncBlk + VMT + данные
 GenericSample\<Int64> | 16 | Аналогично
 GenericSample\<IEnumerable> | 12 | Аналогично
 GenericSample\<DateTime> | 16 | Аналогично
