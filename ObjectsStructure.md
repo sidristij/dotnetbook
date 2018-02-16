@@ -710,6 +710,75 @@ Boo::Dispose()
 Boo.IDisposable::Dispose
 ```
 
+> **БОЛВАНКА**
+
+> В качестве примера "наследования интерфейсов", что аналогично наследованию классов, можно привести следующей код:
+
+> ```vb
+>     Class Foo
+>         Implements IDisposable
+> 
+>         Public Overridable Sub DisposeImp() Implements IDisposable.Dispose
+>             Console.WriteLine("Foo.IDisposable::Dispose")
+>         End Sub
+> 
+>         Public Sub Dispose()
+>             Console.WriteLine("Foo::Dispose()")
+>         End Sub
+> 
+>     End Class
+> 
+>     Class Boo
+>         Inherits Foo
+>         Implements IDisposable
+> 
+>         Public Sub DisposeImp() Implements IDisposable.Dispose
+>             Console.WriteLine("Boo.IDisposable::Dispose")
+>         End Sub
+> 
+>         Public Shadows Sub Dispose()
+>             Console.WriteLine("Boo::Dispose()")
+>         End Sub
+> 
+>     End Class
+> 
+>     ''' <summary>
+>     ''' Неявно реализует интерфейс
+>     ''' </summary>
+>     Class Doo
+>         Inherits Foo
+> 
+>         ''' <summary>
+>         ''' Переопределение явной реализации
+>         ''' </summary>
+>         Public Overrides Sub DisposeImp()
+>             Console.WriteLine("Doo.IDisposable::Dispose")
+>         End Sub
+> 
+>         ''' <summary>
+>         ''' Неявное перекрытие
+>         ''' </summary>
+>         Public Sub Dispose()
+>             Console.WriteLine("Doo::Dispose()")
+>         End Sub
+> 
+>     End Class
+> 
+>     Sub Main()
+>         Dim foo As New Foo
+>         Dim boo As New Boo
+>         Dim doo As New Doo
+> 
+>         CType(foo, IDisposable).Dispose()
+>         foo.Dispose()
+>         CType(boo, IDisposable).Dispose()
+>         boo.Dispose()
+>         CType(doo, IDisposable).Dispose()
+>         doo.Dispose()
+>     End Sub
+> ```
+> В нем видно, что `Doo`, наследуясь от `Foo`, неявно реализует `IDisposable`, но при этом переопределяет явную реализацию `IDisposable.Dispose`, что приведет к вызову переопределения при вызове по интерфесу, тем самым показывая "наследование интерфейсов" классов `Foo` и `Doo`.  
+
 С одной стороны, это вообще не проблема: если бы C# + CLR позволяли такие шалости, мы бы, в некотором, смысле получили нарушение консистентности в строении типов. Сами подумайте: вы сделали крутую архитектуру, все хорошо. Но кто-то почему-то вызывает методы не так, как вы задумали. Это было бы ужасно. С другой стороны, в C++ похожая возможность существует, и там не сильно жалуются на это. Почему я говорю, что это может быть добавлено в C#? Потому что не менее ужасный функционал [уже обсуждается](https://github.com/dotnet/csharplang/issues/52) и выглядеть он должен примерно так:
 
 ```csharp
