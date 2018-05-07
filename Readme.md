@@ -9,37 +9,26 @@
 # Содержание
 
   1. Common Language Runtime
-  1. [Основы менеджмента памяти: пользовательский слой](./MemoryManagementBasics.md)
+  1. Основы менеджмента памяти: пользовательский слой
+      1. [Heap basics](./MemoryManagementBasics.md)
       1. [Стек потока](./ThreadStack.md)
-      1. Heap
       1. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
       1. [Структура объектов в памяти](./ObjectsStructure.md)
       1. Small Objects Heap
       1. Large Objects Heap
       1. Garbage Collection
       1. Statics
-  1. Погружаемся в систему типов
-      1. Структура объектов
-      1. Структура и назначение таблицы виртуальных методов
-      1. Generic классы и интерфейсы: строение типов
-      1. Как работает приведение типа. Скорость приведения типа.
-      1. Вычисление размера ReferenceType. sizeof(reftype).
-      1. TBD
   1. Слой управления памятью: как работает CLR
       1. Подробно про Small Objects Heap
           1. Пример: дамп памяти, влияние pinned objects на аллокацию
       1. Large Objects Heap
           1. Пример: как легко испортить кучу, как этого избегать
-      1. Stack потока
-          1. Пример: запоминаем строение стека путем его редактирования.
       1. Garbage Collection
           1. Mark & Sweep
           1. Оптимизация поколений
           1. Финлизация
           1. Проблемы, связанные с GC и финализацией
           1. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
-  1. Слой операционных систем: откуда берется память.
-  1. Слой процессора: на чем все основано. Общие правила.
 
 # Лицензия
 
