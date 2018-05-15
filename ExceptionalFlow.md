@@ -293,7 +293,7 @@ void Main()
     var counter = 0;
 
     AppDomain.CurrentDomain.FirstChanceException += (_, args) => {
-        Console.WriteLine(args.Exception.Message;
+        Console.WriteLine(args.Exception.Message);
         if(++counter == 1) {
             throw new ArgumentOutOfRangeException();
         }
@@ -303,7 +303,155 @@ void Main()
 }
 ```
 
-Чем примечателен данный код? Где бы вы не получили нежданное исключение первое что произойдет - это его логгирование в консоль. Т.е. даже если вы забудете или не сможете предусмотреть обработку некоторого типа исключения оно все равно появится в журнале событий, которое вы организуете. Второе - несколько странное условие выброса внутреннего исключения. Все дело в том что внутри обработчика `FirstChanceException` вы не можете просто взять и бросить еще одно исключение. Если вы так сделаете, возможны два варианта событий. При первом, если бы не было условия `if(++counter == 1)`, мы бы получили бесконечный выброс `FirstChanceException` для все новых и новых `ArgumentOutOfRangeException`. А что это зачит? Это значит что на определенном этапе мы бы получили `StackOverflowException`: `throw new Exception("Hello!")` вызывает CLR метод Throw, который вызывает `FirstChanceException`, который вызывает `Throw` уже для `ArgumentOutOfRangeException` и далее - по рекурсии. Второй вариант - мы защитились по глубине рекурсии, выставив условие `if(++counter == 1) {`. Т.е. в данном случае мы бросаем исключение только один раз. Результат более чем неожиданный: мы получим исключительную ситуацию для инструкции `Throw`. А какое исключение подходит тут более всего? `ExecutionEngineException`! А эту исключительную ситуацию мы обработать никак не в состоянии. 
+Чем примечателен данный код? Где бы вы не получили нежданное исключение первое что произойдет - это его логгирование в консоль. Т.е. даже если вы забудете или не сможете предусмотреть обработку некоторого типа исключения оно все равно появится в журнале событий, которое вы организуете. Второе - несколько странное условие выброса внутреннего исключения. Все дело в том что внутри обработчика `FirstChanceException` вы не можете просто взять и бросить еще одно исключение. Скорее даже так: внутри обработчика FirstChanceException вы *не имеете возможности* бросить хоть какое-либо исключение. Если вы так сделаете, возможны два варианта событий. При первом, если бы не было условия `if(++counter == 1)`, мы бы получили бесконечный выброс `FirstChanceException` для все новых и новых `ArgumentOutOfRangeException`. А что это значит? Это значит что на определенном этапе мы бы получили `StackOverflowException`: `throw new Exception("Hello!")` вызывает CLR метод Throw, который вызывает `FirstChanceException`, который вызывает `Throw` уже для `ArgumentOutOfRangeException` и далее - по рекурсии. Второй вариант - мы защитились по глубине рекурсии при помощи условия по `counter`. Т.е. в данном случае мы бросаем исключение только один раз. Результат более чем неожиданный: мы получим исключительную ситуацию, которая фактически отрабатывает внутри инструкции `Throw`. А что подходит более всего для данной ситуации? Согласно ECMA-335 если инструкция была введена в исключительное положение, должно быть выброшено `ExecutionEngineException`! А эту исключительную ситуацию мы обработать никак не в состоянии. Она приводит к полному вылету из приложения. Какие же варианты безопасной обработки у нас есть?
+
+Первое, что приходит в голову - это выставить `try-catch` блок на весь код обработчика `FirstChanceException`:
+
+```csharp
+void Main()
+{
+    var fceStarted = false;
+    var sync = new object();
+    EventHandler<FirstChanceExceptionEventArgs> handler;
+    handler = new EventHandler<FirstChanceExceptionEventArgs>((_, args) =>
+    {
+        lock (sync)
+        {
+            if (fceStarted)
+            {
+            // Этот код по сути - заглушка, призванная уведомить что исключение по своей сути - родилось не в основном коде приложения, 
+            // а в try блоке ниже.
+            Console.WriteLine($"FirstChanceException inside FirstChanceException ({args.Exception.GetType().FullName})");
+                return;
+            }
+            fceStarted = true;
+
+            try
+            {
+            // не безопасное логгирование куда угодно. Например, в БД
+            Console.WriteLine(args.Exception.Message);
+                throw new ArgumentOutOfRangeException();
+            }
+            catch (Exception exception)
+            {
+            // это логгирование должно быть максимально безопасным
+            Console.WriteLine("Success");
+            }
+            finally
+            {
+                fceStarted = false;
+            }
+        }
+    });
+    AppDomain.CurrentDomain.FirstChanceException += handler;
+
+    try
+    {
+        throw new Exception("Hello!");
+    } finally {
+        AppDomain.CurrentDomain.FirstChanceException -= handler;
+    }
+}
+
+OUTPUT:
+
+Hello!
+Specified argument was out of the range of valid values.
+FirstChanceException inside FirstChanceException (System.ArgumentOutOfRangeException)
+Success
+
+!Exception: Hello!
+```
+
+Т.е. с одной стороны у нас есть код обработки события `FirstChanceException`, а с другой - дополнительный код обработки исключений в самом `FirstChanceException`. Однако методики логгирования обоих ситуаций должны отличаться. Если логгирование обработки события может идти как угодно, то обработка ошибки внутри логики `FirstChanceException` должно идти без исключительных ситуаций в принципе. Второе, что вы наверняка заметили - это синхронизация между потоками. Тут может возникнуть вопрос: зачем она тут если любое исключение рождено в каком-либо потоке а значит `FirstChanceException` по-идее должен быть потокобезопасным. Однако, все не так жизнерадостно. `FirstChanceException` у нас возникает у AppDomain. А это значит, что он возникает для любого потока, стартованного в определенном домене. Т.е. если у нас есть домен, внутри которого стартовано несколько потоков, то `FirstChanceException` могут идти в параллель. А это значит что нам необходимо как-то защитить себя синхронизацией: например при помощи `lock`.
+
+Второй способ - попробовать увести обработку в соседний поток, принадлежащий другому домену приложений. Однако тут стоит оговориться что при такой реализации мы должны построить выделенный домен именно под эту задачу чтобы не получилось так что этот домен могут положить другие потоки, которые являются рабочими:
+
+```csharp
+static void  Main()
+{
+    using (ApplicationLogger.Go(AppDomain.CurrentDomain))
+    {
+        throw new Exception("Hello!");
+    }
+}
+
+public class ApplicationLogger : MarshalByRefObject
+{
+    ConcurrentQueue<Exception> queue = new ConcurrentQueue<Exception>();
+    CancellationTokenSource cancellation;
+    ManualResetEvent @event;
+
+    public void LogFCE(Exception message)
+    {
+        queue.Enqueue(message);
+    }
+
+    private void StartThread()
+    {
+        cancellation = new CancellationTokenSource();
+        @event = new ManualResetEvent(false);
+        var thread = new Thread(() =>
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                if (queue.TryDequeue(out var exception))
+                {
+                    // Код логгирования
+                    Console.WriteLine(exception.Message);
+                }
+                Thread.Yield();
+            }
+            @event.Set();
+        });
+        thread.Start();
+    }
+
+    private void Wait()
+    {
+        @event.WaitOne();
+    }
+
+    public static IDisposable Go(AppDomain observable)
+    {
+        var dom = AppDomain.CreateDomain("ApplicationLogger", null, new AppDomainSetup
+        {
+            ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+        });
+
+        var proxy = (ApplicationLogger)dom.CreateInstanceAndUnwrap(typeof(ApplicationLogger).Assembly.FullName, typeof(ApplicationLogger).FullName);
+        proxy.StartThread();
+
+        var subscription = new EventHandler<FirstChanceExceptionEventArgs>((_, args) =>
+        {
+            proxy.LogFCE(args.Exception);
+        });
+        observable.FirstChanceException += subscription;
+
+        return new Subscription(() =>
+        {
+            observable.FirstChanceException -= subscription;
+            proxy.Wait();
+        });
+    }
+}
+
+private class Subscription : IDisposable
+{
+    Action act;
+    public Subscription(Action act)
+    {
+        this.act = act;
+    }
+
+    public void Dispose()
+    {
+        act();
+    }
+}
+```
+
+В данном случае обработка `FirstChanceException` происходит максимально безопасно: в соседнем потоке, принадлежащим соседнему домену. Ошибки обработки сообщения при этом не могут обрушить рабочие потоки приложения. Плюс отдельно можно послушать UnhandledException домена логгирования сообщений: фатальные ошибки при логгировании не обрушат все приложение.
 
 ### AppDomain.UnhandledException [In Progress]
 
@@ -332,3 +480,7 @@ try {
 Согласитесь, это выглядит интереснее чем один блок `catch` и `switch` внутри с `throw;` в `default` блоке. Это выглядит более разграниченным, более правильным с точки зрения разделения ответственности. Ведь исключение с кодом ошибки по своей сути - ошибка дизайна, а фильтрация - это выправка нарушения архитектуры, переводя в кконцепцию раздельных типов исключений.
 
 ## Виды исключительных ситуаций
+
+TODO
+
+  - FailFast
