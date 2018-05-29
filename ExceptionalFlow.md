@@ -752,7 +752,89 @@ internal void InvokeCancellableCallback(WaitCallback callback, Object state) {
 
 Здесь приведен прекрасный пример перехода от неуправляемого асинхронного исключения `ThreadAbortException` к управляемому `HttpException` с логгированием ситуации в журнал счетчиков производительности.
 
-  - Обычно код обрабатывает только те ошибки, которые ждет: нет доступа к файлу, ошибка парсинга строки и прочие подобные. Наличие асинхронного (в плане возникновения в любом месте кода) исключения создает ситуацию, когда try-catch могут быть не обработаны: вы же не можете быть готовым к ThreadAbort в любом месте приложения. И получается, что это исключение в любом случае породит утечки.
+##### TheradAbortException во время AppDomain.Unload
+
+Попробуем отгрузить AppDomain во время исполнения кода, который в него загружен. Для этого искусственно создадим не вполне нормальную ситуацию, но достаточно интересную с точки зрения исполнения кода. В данном примере у нас два потока: один создан для того чтобы получить в нем ThreadAbortException, а другой - основной. В основном мы создаем новый домен, в котором запускаем новый поток. Задача этого потока - уйти в основной домен. Чтобы методы дочернего домена осталиь бы только в Stack Trace. После этого основной домен отгружает дочерний:
+
+```csharp
+class Program : MarshalByRefObject
+{
+    static void Main()
+    {
+        try
+        {
+            var domain = ApplicationLogger.Go(new Program());
+            Thread.Sleep(300);
+            AppDomain.Unload(domain);
+
+        } catch (ThreadAbortException exception)
+        {
+            Console.WriteLine("Main AppDomain aborted too, {0}", exception.Message);
+        }
+    }
+
+    public void InsideMainAppDomain()
+    {
+        try
+        {
+            Console.WriteLine($"InsideMainAppDomain() called inside {AppDomain.CurrentDomain.FriendlyName} domain");
+
+            // AppDomain.Unload will be called while this Sleep
+            Thread.Sleep(-1);
+        }
+        catch (ThreadAbortException exception)
+        {
+            Console.WriteLine("Subdomain aborted, {0}", exception.Message);
+
+            // This sleep to allow user to see console contents
+            Thread.Sleep(-1);
+        }
+    }
+
+    public class ApplicationLogger : MarshalByRefObject
+    {
+        private void StartThread(Program pro)
+        {
+            var thread = new Thread(() =>
+            {
+                pro.InsideMainAppDomain();
+            });
+            thread.Start();
+        }
+
+        public static AppDomain Go(Program pro)
+        {
+            var dom = AppDomain.CreateDomain("ApplicationLogger", null, new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+            });
+
+            var proxy = (ApplicationLogger)dom.CreateInstanceAndUnwrap(typeof(ApplicationLogger).Assembly.FullName, typeof(ApplicationLogger).FullName);
+            proxy.StartThread(pro);
+
+            return dom;
+        }
+    }
+
+}
+```
+
+Происходит крайне интересная вещь. Код выгрузки домена помимо самой выгрузки ищет вызванные в этом домене методы, которые еще не завершили работу в том числе в глубине стека вызова методов и вызывает `ThreadAbortException` в этих потоках. Это важно, хоть и не очевидно: если домен отгружен, нельзя осуществить возврат в метод, из которого был вызван метод основного домена, но который находится в отгружаемом. Т.е. другими словами AppDomain.Unload может выбрасывать потоки, исполняющие в данный момент код из других доменов. Прервать `Thread.Abort` в таком случае не получится: исполнять код выгруженного домена вы не сможете, а значит `Thread.Abort` завершит свое дело, даже если вы вызовите `Thread.ResetAbort`.
+
+#### Выводы по ThreadAbortException
+
+  - Это - асинхронное исключение, а значит оно может возникнуть в любой точке вашего кода;
+  - Обычно код обрабатывает только те ошибки, которые ждет: нет доступа к файлу, ошибка парсинга строки и прочие подобные. Наличие асинхронного (в плане возникновения в любом месте кода) исключения создает ситуацию, когда try-catch могут быть не обработаны: вы же не можете быть готовым к ThreadAbort в любом месте приложения. И получается, что это исключение в любом случае породит утечки;
+  - Обрыв потока может также происходить из-за выгрузки какого-либо домена. Если в Stack Trace потока существуют вызовы методов отгружаемого домена, поток получит ThreadAbortException без возможности `ResetAbort`;
+  - В общем случае не должно возникать ситуаций, когда вам нужно вызвать Thread.Abort(), поскольку результат практически всегда - не предсказуем.
+
+### ExecutionEngineException
+
+В комментарии к этому исключению стоит атрибут `Obsolete` с комментарием:
+
+> This type previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete
+
+И вообще-то это - не правда.
 
 ## Выводы
 
