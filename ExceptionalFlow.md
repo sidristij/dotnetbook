@@ -667,6 +667,58 @@ catch(Exception e) {
 
 Здесь описывается очень интересный случай: когда мы также ждем не настоящий `ThreadAbort` (мне вот в некотором смысле жалко команду CLR b .NET Framework. Сколько не стандартных ситуаций им приходится обрабатывать, подумать страшно). Обработка ситуации идет в два этапа: внутренним обработчиком мы ловим `ThreadAbortException` но при этом проверяем наш поток на флаг реальной прерываемости. Если поток не помечен как прерывающийся, то на самом деле это не настоящий ThreadAbortException. Такие ситуации мы должны обработать соответствующим образом: спокойно поймать исключение и обработать его. Если же мы получаем настоящий ThreadAbort, то он уйдет во внешний `catch` поскольку `ThreadAbortException` должен войти во все подходящие обработчики. Если он удовлетворяет необходимым условиям, он также будет обработан путем очистки флага `ThreadState.AbortRequested` методом `Thread.ResetAbort()`.
 
+Если говорить про примеры самого вызова `Thread.Abort()`, то все примеры кода в .NET Framework написаны так что могут быть переписаны без его использования. Для наглядности приведу только один:
+
+**Класс QueuePathDialog** [QueuePathDialog.cs](https://referencesource.microsoft.com/#System.Messaging/System/Messaging/Design/QueuePathDialog.cs,364)
+
+```csharp
+protected override void OnHandleCreated(EventArgs e)
+{
+    if (!populateThreadRan)
+    {
+        populateThreadRan = true;
+        populateThread = new Thread(new ThreadStart(this.PopulateThread));
+        populateThread.Start();
+    }
+
+    base.OnHandleCreated(e);
+}
+
+protected override void OnFormClosing(FormClosingEventArgs e)
+{
+    this.closed = true;
+
+    if (populateThread != null)
+    {
+        populateThread.Abort();
+    }
+
+    base.OnFormClosing(e);
+}
+
+private void PopulateThread()
+{
+    try
+    {
+        IEnumerator messageQueues = MessageQueue.GetMessageQueueEnumerator();
+        bool locate = true;
+        while (locate)
+        {
+            // ...
+            this.BeginInvoke(new FinishPopulateDelegate(this.OnPopulateTreeview), new object[] { queues });
+        }
+    }
+    catch
+    {
+        if (!this.closed)
+            this.BeginInvoke(new ShowErrorDelegate(this.OnShowError), null);
+    }
+
+    if (!this.closed)
+        this.BeginInvoke(new SelectQueueDelegate(this.OnSelectQueue), new object[] { this.selectedQueue, 0 });
+}
+```
+
 **Класс HttpContext** [HttpContext.cs](https://referencesource.microsoft.com/#System.Web/HttpContext.cs,1864)
 
 ```csharp
