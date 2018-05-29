@@ -543,8 +543,7 @@ void Main()
     var thread = new Thread(() =>
     {
         try {
-            // 1
-            barrier.SignalAndWait();
+            barrier.SignalAndWait();  // Breakpoint #1
             Thread.Sleep(TimeSpan.FromSeconds(30));
         }
         catch (ThreadAbortException exception)
@@ -554,16 +553,14 @@ void Main()
         }
 
         "Catched successfully".Dump();
-        // 2
-        barrier.SignalAndWait();
+        barrier.SignalAndWait();     // Breakpoint #2
     });
 
     thread.Start();
-    // 1
-    barrier.SignalAndWait();
+    barrier.SignalAndWait();         // Breakpoint #1
+
     thread.Abort();
-    // 2
-    barrier.SignalAndWait();
+    barrier.SignalAndWait();         // Breakpoint #2
 }
 
 Output:
