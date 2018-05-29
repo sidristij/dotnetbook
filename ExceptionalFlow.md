@@ -496,6 +496,7 @@ public class ApplicationLogger : MarshalByRefObject
   - Грубый вариант ThreadAbort, который, отрабатывая не может быть никак остановлен и который не запускает обработчиков исключительных ситуаций вообще включая секции `finally`
   - Вызов метода Thread.Abort() на текущем потоке
   - Асинхронное исключение ThreadAbortException, вызванное из другого потока
+  - Отгрузка AppDomain, в рамках которого исполнялся указанный поток
 
 > Стоит заметить что ThreadAbortException довольно часто используется в _большом_ .NET Framework, однако его не существует на CoreCLR, .NET Core или же под Windows 8 "Modern app profile". Попробуем узнать, почему.
 
@@ -574,6 +575,132 @@ Catched successfully
 Однако реально ли стоит этим пользоваться? И стоит ли обижаться на разработчиков CoreCLR что там этот код попросту выпилен? Представьте что вы - пользователь кода, который по вашему мнению "повис" и у вас возникло непреодолимое желание вызвать для него `ThreadAbortException`. Когда вы хотите оборвать жизнь потока все чего вы хотите - чтобы он действительно завершил свою работу. Мало того, редкий алгоритм просто обрывает поток и бросает его, уходя к своим делам. Обычно внешний алгоритм решает дождаться корректного завершения операций. Или же наоборот: может решить что поток более уже ничего делать не будет, декрементирует некие внутренние счетчики и более не будет завязываться на то что есть какая-то многопоточная обработка какого-либо кода. Тут в общем не скажешь, что хуже. Я даже так вам скажу: отработав много лет программистом я до сих пор не могу вам дать прекрасный способ его вызова и обработки. Сами посудите: вы бросаете `ThreadAbort` не _прямо сейчас_ а в любом случае спустя некоторое время после осознания безвыходности ситуации. Т.е. вы можете как попасть по обработчику `ThreadAbortException` так и промахнуться мимо него: "зависший код" мог оказаться вовсе не зависшим, а попросту долго работающим. И как раз в тот момент, когда вы хотели оборвать его жизнь, он мог вырваться из ожидания и корректно продолжить работу. Т.е. без лишней лирики выйти из блока `try-catch(ThreadAbortException) { Thread.ResetAbort(); }`. Что мы получим? Оборванный поток, который ни в чем не виноват. Шла уборщица, выдернула провод, сеть пропала. Метод ожидал таймаута, уборщица вернула провод, все заработало, но ваш контролирующий код не дождался и убил поток. Хорошо? Нет. Как-то можно защититься? Нет. Но вернемся к навящивой идее легализации `Thread.Abort()`: мы кинули кувалдой в поток и ожидаем что он с вероятностью 100% оборвется, но этого может не произойти. Во-первых становится не понятно как его оборвать в таком случае. Ведь тут все может быть намного сложнее: в подвисшем потоке может быть такая логика, которая перехватывает `ThreadAbortException`, останавливает его при помощи `ResetAbort`, однако продолжает висеть из-за сломанной логики. Что тогда? Делать безусловный `thread.Interrupt()`? Попахивает попыткой обойти ошибку в логике программы грубыми методами. Плюс, я вам гарантирую что у вас поплывут утечки: `thread.Interrupt()` не будет заниматься вызовом `catch` и `finally`, а это значит что при всем опыте и сноровке очистить ресурсы вы не сможете: ваш поток просто исчезнет, а находясь в соседнем потоке вы можете не знать ссылок на все ресурсы, которые были заняты умирающим потоком. Также прошу заметить что в случае промаха `ThreadAbortException` мимо `catch(ThreadAbortException) { Thread.ResetAbort(); }` у вас точно также потекут ресурсы.
 
 После того что вы прочитали чуть выше я надеюсь, вы остались в некотором состоянии запутанности и желания перечитать абзац. И это будет совершенно правильная мысль: это будет доказательством того что пользоваться `Thread.Abort()` попросту нельзя. Как и нельзя пользоваться `thread.Interrupt();`. Оба метода приводят к неконтролируемому поведению вашего приложения.
+
+Однако, чтобы понять для каких целей этот метод введен в эксплуатацию достаточно посмотреть исходные коды .NET Framework и найти места использования `Thread.ResetAbort()`. Ведь именно его наличие по сути легализует `thread.Abort()`.
+
+**Класс ISAPIRuntime** [ISAPIRuntime.cs](https://referencesource.microsoft.com/#System.Web/Hosting/ISAPIRuntime.cs,192)
+
+```csharp
+try {
+
+    // ...
+
+}
+catch(Exception e) {
+    try {
+        WebBaseEvent.RaiseRuntimeError(e, this);
+    } catch {}
+    
+    // Have we called HSE_REQ_DONE_WITH_SESSION?  If so, don't re-throw.
+    if (wr != null && wr.Ecb == IntPtr.Zero) {
+        if (pHttpCompletion != IntPtr.Zero) {
+            UnsafeNativeMethods.SetDoneWithSessionCalled(pHttpCompletion);
+        }
+        // if this is a thread abort exception, cancel the abort
+        if (e is ThreadAbortException) {
+            Thread.ResetAbort();
+        }                    
+        // IMPORTANT: if this thread is being aborted because of an AppDomain.Unload,
+        // the CLR will still throw an AppDomainUnloadedException. The native caller
+        // must special case COR_E_APPDOMAINUNLOADED(0x80131014) and not
+        // call HSE_REQ_DONE_WITH_SESSION more than once.
+        return 0;
+    }
+    
+    // re-throw if we have not called HSE_REQ_DONE_WITH_SESSION
+    throw;
+}
+```
+
+В данном примере происходит вызов некоторого внешнего кода и если тот был завершен не корректно: с `ThreadAbortException`, то при определенных условиях помечаем поток как более не прерываемый. Т.е. по сути обрабатываем `ThreadAbort`. Почему в данном конкретно случае мы обрываем `Thread.Abort`? Потому что в данном случае мы имеем дело с серверным кодом, а он в свою очередь вне зависимости от нашеих ошибок вернуть корректные коды ошибок вызывающей стороне. Обрыв потока привел бы к тому что сервер не смог бы вернуть нужный код ошибки пользователю, а это совершенно не правильно. Также оставлен комментарий о `Thread.Abort()` во время `AppDomin.Unload()`, что является экстримальной ситуацией для ThreadAbort поскольку такой процесс не остановить и даже если вы сделаете `Thread.ResetAbort`, это хоть и остановит сам Abortion, но не остановит выгрузку потока с доменом, в котором он находится: поток же не может исполнять инструкции кода, загруженного в домен, который отгружен.
+
+**Класс HttpApplication** [HttpApplication.cs](https://referencesource.microsoft.com/#System.Web/HttpApplication.cs,2270)
+
+```csharp
+ internal Exception ExecuteStep(IExecutionStep step, ref bool completedSynchronously) 
+ {
+    Exception error = null;
+
+    try {
+        try {
+
+        // ...
+
+        }
+        catch (Exception e) {
+            error = e;
+
+            // ...
+
+            // This might force ThreadAbortException to be thrown
+            // automatically, because we consumed an exception that was
+            // hiding ThreadAbortException behind it
+
+            if (e is ThreadAbortException &&
+                ((Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == 0))  {
+                // Response.End from a COM+ component that re-throws ThreadAbortException
+                // It is not a real ThreadAbort
+                // VSWhidbey 178556
+                error = null;
+                _stepManager.CompleteRequest();
+            }
+        }
+        catch {
+            // ignore non-Exception objects that could be thrown
+        }
+    }
+    catch (ThreadAbortException e) {
+        // ThreadAbortException could be masked as another one
+        // the try-catch above consumes all exceptions, only
+        // ThreadAbortException can filter up here because it gets
+        // auto rethrown if no other exception is thrown on catch
+        if (e.ExceptionState != null && e.ExceptionState is CancelModuleException) {
+            // one of ours (Response.End or timeout) -- cancel abort
+
+            // ...
+
+            Thread.ResetAbort();
+        }
+    }
+}
+```
+
+Здесь описывается очень интересный случай: когда мы также ждем не настоящий `ThreadAbort` (мне вот в некотором смысле жалко команду CLR b .NET Framework. Сколько не стандартных ситуаций им приходится обрабатывать, подумать страшно). Обработка ситуации идет в два этапа: внутренним обработчиком мы ловим `ThreadAbortException` но при этом проверяем наш поток на флаг реальной прерываемости. Если поток не помечен как прерывающийся, то на самом деле это не настоящий ThreadAbortException. Такие ситуации мы должны обработать соответствующим образом: спокойно поймать исключение и обработать его. Если же мы получаем настоящий ThreadAbort, то он уйдет во внешний `catch` поскольку `ThreadAbortException` должен войти во все подходящие обработчики. Если он удовлетворяет необходимым условиям, он также будет обработан путем очистки флага `ThreadState.AbortRequested` методом `Thread.ResetAbort()`.
+
+**Класс HttpContext** [HttpContext.cs](https://referencesource.microsoft.com/#System.Web/HttpContext.cs,1864)
+
+```csharp
+internal void InvokeCancellableCallback(WaitCallback callback, Object state) {
+    // ...
+ 
+    try {
+        BeginCancellablePeriod();  // request can be cancelled from this point
+        try {
+            callback(state);
+        }
+        finally {
+            EndCancellablePeriod();  // request can be cancelled until this point
+        }
+        WaitForExceptionIfCancelled();  // wait outside of finally
+    }
+    catch (ThreadAbortException e) {
+        if (e.ExceptionState != null &&
+            e.ExceptionState is HttpApplication.CancelModuleException &&
+            ((HttpApplication.CancelModuleException)e.ExceptionState).Timeout) {
+
+            Thread.ResetAbort();
+            PerfCounters.IncrementCounter(AppPerfCounter.REQUESTS_TIMED_OUT);
+
+            throw new HttpException(SR.GetString(SR.Request_timed_out),
+                                null, WebEventCodes.RuntimeErrorRequestAbort);
+        }
+    }
+}
+```
+
+Здесь приведен прекрасный пример перехода от неуправляемого асинхронного исключения `ThreadAbortException` к управляемому `HttpException` с логгированием ситуации в журнал счетчиков производительности.
+
+  - Обычно код обрабатывает только те ошибки, которые ждет: нет доступа к файлу, ошибка парсинга строки и прочие подобные. Наличие асинхронного (в плане возникновения в любом месте кода) исключения создает ситуацию, когда try-catch могут быть не обработаны: вы же не можете быть готовым к ThreadAbort в любом месте приложения. И получается, что это исключение в любом случае породит утечки.
 
 ## Выводы
 
