@@ -28,7 +28,9 @@
           1. Оптимизация поколений
           1. Финализация
           1. Проблемы, связанные с GC и финализацией
-          1. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
+          2. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
+  1. Поток исполнения команд
+      1. [Исключительные ситуации](./ExceptionalFlow.md)
 
 # Лицензия
 
