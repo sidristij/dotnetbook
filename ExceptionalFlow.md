@@ -356,7 +356,49 @@ public class ProxyRunner : MarshalByRefObject
 
 ### Выводы к архитектуре исключительных ситуаций
 
+Итак, что мы с вами имеем? Давайте взглянем на код:
 
+```csharp
+public abstract class MyDomainExceptionBase : Exception
+{
+    protected MyDomainExceptionBase()
+    {
+        // ...
+    }
+
+    //...
+}
+
+public abstract class NonRecoverableExceptionBase
+{
+    protected NonRecoverableExceptionBase()
+    {
+
+    }
+
+    // ...
+}
+
+public class MyDomainException : MyDomainExceptionBase
+{
+    // ...
+}
+
+public class CriticalCacheFault : NonRecoverableExceptionBase
+{
+
+}
+
+public class DomainFunctionException : MyDomainException
+{
+
+}
+
+public class ConcreteDomainFunctionException : DomainFunctionException
+{
+
+}
+```
 
 ## События об исключительных ситуациях
 
