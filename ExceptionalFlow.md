@@ -396,8 +396,7 @@ public abstract class ParserException
 public enum ParserError
 {
     MissingModifier,
-    MissingBracket,
-    // ...
+    MissingBracket
 }
 
 public class MissingModifierParserException : ParserException
@@ -411,9 +410,8 @@ public class MissingBracketParserException : ParserException
 }
 
 // Usage
-throw new ParserException(ParserError.MissingModifier);
+throw new MissingModifierParserException(ParserError.MissingModifier);
 ```
-
 
 ### По отношению к единой группе поведенческих ситуаций
 
