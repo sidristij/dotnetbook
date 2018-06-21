@@ -128,14 +128,14 @@ finally
 try {
     //...
 }
-catch (SomeException exception)
+catch (ParserException exception)
 {
     switch(exception.ErrorCode)
     {
-        case ErrorCode.NetworkDown:
+        case ErrorCode.MissingModifier:
             // ...
             break;
-        case ErrorCode.CacheDown:
+        case ErrorCode.MissingBracket:
             // ...
             break;
         default:
@@ -150,11 +150,11 @@ catch (SomeException exception)
 try {
     //...
 }
-catch (SomeException exception) when (exception.ErrorCode == ErrorCode.NetworkDown)
+catch (ParserException exception) when (exception.ErrorCode == ErrorCode.MissingModifier)
 {
     // ...
 }
-catch (SomeException exception) when (exception.ErrorCode == ErrorCode.CacheDown)
+catch (ParserException exception) when (exception.ErrorCode == ErrorCode.MissingBracket)
 {
     // ...
 }
@@ -377,6 +377,43 @@ throw new ParserException(ParserError.MissingModifier);
 Можно также создать по типу исключения под каждую ситуацию. С одной стороны это выглядит логично: один тип ошибки - один тип исключения. Однако, тут, как и во всем, главное не переусердствовать: имея по типу исключительных операций на каждую точку выброса вы порождаете тем самым проблемы для перехвата: код вызывающего метода будет перегружен блоками `catch`. Ведь ему надо обработать все типы исключений, которые вы хотите ему отдать. Другой минус - чисто архитектурный. Если вы не используете наследования, то тем самым дезориентируете пользователя этих исключений: между ними может быть много общего, а перехватывать их приходится по отдельности.
 
 Тем не менее существуют хорошие сценарии для введения отдельных типов для конкретных ситуаций. Например, когда поломка происходит не для всей сущности в целом, а для конкретного метода. Тогда этот тип должен быть в иерархии наследования находиться в таком месте чтобы не возникало мысли его перехватить заодно с чем-то еще.
+
+#### TODO
+
+```csharp
+public abstract class ParserException
+{
+    public abstract ParserError ErrorCode { get; }
+
+    public override string Message
+    {
+        get {
+            return Resources.GetResource($"{nameof(ParserException)}{Enum.GetName(typeof(ParserError), ErrorCode)}");
+        }
+    }
+}
+
+public enum ParserError
+{
+    MissingModifier,
+    MissingBracket,
+    // ...
+}
+
+public class MissingModifierParserException : ParserException
+{
+    public override ParserError ErrorCode { get; } => ParserError.MissingModifier;
+}
+
+public class MissingBracketParserException : ParserException
+{
+    public override ParserError ErrorCode { get; } => ParserError.MissingBracket;
+}
+
+// Usage
+throw new ParserException(ParserError.MissingModifier);
+```
+
 
 ### По отношению к единой группе поведенческих ситуаций
 
