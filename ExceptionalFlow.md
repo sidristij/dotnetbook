@@ -128,14 +128,14 @@ finally
 try {
     //...
 }
-catch (SomeException exception)
+catch (ParserException exception)
 {
     switch(exception.ErrorCode)
     {
-        case ErrorCode.NetworkDown:
+        case ErrorCode.MissingModifier:
             // ...
             break;
-        case ErrorCode.CacheDown:
+        case ErrorCode.MissingBracket:
             // ...
             break;
         default:
@@ -150,11 +150,11 @@ catch (SomeException exception)
 try {
     //...
 }
-catch (SomeException exception) when (exception.ErrorCode == ErrorCode.NetworkDown)
+catch (ParserException exception) when (exception.ErrorCode == ErrorCode.MissingModifier)
 {
     // ...
 }
-catch (SomeException exception) when (exception.ErrorCode == ErrorCode.CacheDown)
+catch (ParserException exception) when (exception.ErrorCode == ErrorCode.MissingBracket)
 {
     // ...
 }
@@ -435,7 +435,44 @@ throw new ParserException(ParserError.MissingModifier);
 
 Тем не менее существуют хорошие сценарии для введения отдельных типов для конкретных ситуаций. Например, когда поломка происходит не для всей сущности в целом, а для конкретного метода. Тогда этот тип должен быть в иерархии наследования находиться в таком месте чтобы не возникало мысли его перехватить заодно с чем-то еще.
 
-### По отношению к единой группе ситуаций
+#### TODO
+
+```csharp
+public abstract class ParserException
+{
+    public abstract ParserError ErrorCode { get; }
+
+    public override string Message
+    {
+        get {
+            return Resources.GetResource($"{nameof(ParserException)}{Enum.GetName(typeof(ParserError), ErrorCode)}");
+        }
+    }
+}
+
+public enum ParserError
+{
+    MissingModifier,
+    MissingBracket
+}
+
+public class MissingModifierParserException : ParserException
+{
+    public override ParserError ErrorCode { get; } => ParserError.MissingModifier;
+}
+
+public class MissingBracketParserException : ParserException
+{
+    public override ParserError ErrorCode { get; } => ParserError.MissingBracket;
+}
+
+// Usage
+throw new MissingModifierParserException(ParserError.MissingModifier);
+```
+
+### По отношению к единой группе поведенческих ситуаций
+
+Какие же выводы можно сделать, основываясь на ранее описанных рассуждениях? Давайте попробуем их сформулировать:
 
 Для начала давайте определимся, что имеется ввиду под ситуациями. Когда мы говорим про классы и объекты, то мы привыкли в первую очередь оперировать сущностями с некоторым внутренним состоянием над которыми можно осуществлять действия. Получается что тем самым мы нашли первый тип поведенческой ситуации: действия над некоторой сущностью. Далее, если посмотреть на граф объектов как-бы со стороны, можно заметить что он логически объединен в функциональные группы: первая занимается кэшированием, вторая - работа с базами данных, третья осуществляет математические расчеты. Через все эти функциональные группы могут идти слои: слой логгирования различных внутренних состояний, журналирование процессов, трассировка вызовов методов. Слои могут быть более охватывающие: объединяющие в себе несколько функциональных групп. Например, слой модели, слой контроллеров, слой представления. Эти группы могут находиться как в одной сборке, так и в совершенно разных, но каждая из них может создавать свои исключительные ситуации.
 
@@ -492,6 +529,40 @@ public class ConcreteDomainFunctionException : DomainFunctionException
 
 }
 ```
+
+### Выводы
+
+[Moved from Conf speak]
+
+#### Проектирование
+
+  - Для начала необходимо сделать базовый класс для домена. Назовем его доменным базовым классом;
+  - Далее необходимо ввести дополнительный базовый класс для исключений, которые перехватывать необходимо;
+  - Все исключения которые обозначают фатальные ошибки – наследовать напрямую от доменного базового класса;
+  - Все проверки параметров проводить под Conditional(“DEBUG”)
+  - Разделить домен на функциональные зоны: CachingException, InternalDatabaseException, ParsingException
+  - Частные исключения наследовать от типов функциональных зон
+  - Если группа частных исключений может быть объединена, объеденить их еще одним базовым типом. 
+  - Если предполагается что группа будет чаще перехватываться по своему базовому классу, ввести Mixed Mode c ErrorCode.
+
+#### Выброс
+
+  - Исключение из внешней зависимости
+    - Нет возможности исправить ситуацию
+    - Нет полной картины происходящего
+    - А потому – не перехватывать
+  - Исключение из внутренней зависимости, ситуация исправима
+    - Внешний код не в курсе ситуации
+    - А потому – перехватывать
+  - Исключение из внутренней зависимости, ситуация неисправима
+    - Внешний код не в курсе ситуации
+    - Исправить ситуацию вы не можете
+    - А потому – обернуть полученное исключение собственным, поместив полученное в InnerException
+  - Возникло не консистентное состояние
+
+#### Перехват
+
+;
 
 ## События об исключительных ситуациях
 
