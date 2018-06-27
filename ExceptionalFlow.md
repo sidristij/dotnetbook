@@ -387,6 +387,7 @@ void Main()
 
 Какая из двух предложенных стратегий является более корректной?
 
+> TODO
 
 ### По вопросам переиспользования
 
@@ -488,6 +489,8 @@ throw new MissingModifierParserException(ParserError.MissingModifier);
 
 Как видите, выбор совсем не тривиален и требует подготовки. Причем именно с точки зрения архитектуры типов.
 
+> TODO
+
 ```csharp
 public abstract class MyDomainExceptionBase : Exception
 {
@@ -532,7 +535,7 @@ public class ConcreteDomainFunctionException : DomainFunctionException
 
 ### Выводы
 
-[Moved from Conf speak]
+> TODO
 
 #### Проектирование
 
@@ -562,7 +565,7 @@ public class ConcreteDomainFunctionException : DomainFunctionException
 
 #### Перехват
 
-;
+> TODO
 
 ## События об исключительных ситуациях
 
@@ -798,7 +801,7 @@ public class ApplicationLogger : MarshalByRefObject
 
 ### CLR Exceptions
 
-s
+> TODO
 
 #### ThreadAbortException
 
@@ -1176,9 +1179,15 @@ void Main()
 
 #### NullReferenceException
 
+> TODO
+
 #### SecurityException
 
+> TODO
+
 #### OutOfMemoryException
+
+> TODO
 
 ### Corrupted State Exceptions
 
@@ -1344,6 +1353,8 @@ try {
 ```
 
 Согласитесь, это выглядит интереснее чем один блок `catch` и `switch` внутри с `throw;` в `default` блоке. Это выглядит более разграниченным, более правильным с точки зрения разделения ответственности. Ведь исключение с кодом ошибки по своей сути - ошибка дизайна, а фильтрация - это выправка нарушения архитектуры, переводя в концепцию раздельных типов исключений.
+
+> TODO
 
 ## TODO
 
