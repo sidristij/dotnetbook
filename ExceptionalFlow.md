@@ -8,15 +8,22 @@
 
 О чем пойдет речь в этом разделе:
 
-  - Состав и развертка блока обработки исключительных ситуаций
-  - События о исключительных ситуациях: `AppDomain.FirstChanceException` и `AppDomain.UnhandledException`
-  - Виды исключений: что тянется из CLR, а что - из более низкого слоя (Windows SEH)
-  - Исключения с особым поведением: ThreadAbortException, OutOfMemoryException и прочие
-  - Каким образом идет сборка стека вызовов и производительность выброса исключений
-  - Асинхронные исключения
-  - Structured Exception Handling
-  - Vectored Exception Handling
-  - Прерывания
+Первый уровень:
+
+- [x] Введение, состав блока обработки исключительных ситуаций
+- [ ] Сериализация
+- [x] Архитектура исключительной ситуации
+- [x] События о исключительных ситуациях: `AppDomain.FirstChanceException` и `AppDomain.UnhandledException`
+- [ ] Виды исключений: что тянется из CLR, а что - из более низкого слоя (Windows SEH)
+- [x] Исключения с особым поведением: ThreadAbortException, OutOfMemoryException и прочие
+- [ ] Каким образом идет сборка стека вызовов и производительность выброса исключений
+- [ ] Асинхронные исключения
+
+Нижний уровень:
+
+- [ ] Structured Exception Handling
+- [ ] Vectored Exception Handling
+- [ ] Прерывания
 
 ## Общая картина
 
