@@ -12,12 +12,32 @@
 
 - [x] Введение, состав блока обработки исключительных ситуаций
 - [ ] Сериализация *В Процессе*
+  - [ ] Причины необходимости сериализации - 80%
+  - [ ] Сериализация исключений
 - [x] Архитектура исключительной ситуации
+  - [x] Введение
+  - [x] По теоретической возможности перехвата
+  - [x] По фактическому перехвату
+  - [x] По вопросам переиспользования
+  - [x] По отношению к единой группе поведенческих ситуаций
+  - [x] По источнику ошибки
 - [x] События о исключительных ситуациях: `AppDomain.FirstChanceException` и `AppDomain.UnhandledException`
+  - [x] AppDomain.FirstChanceException
+  - [x] AppDomain.UnhandledException
 - [ ] Виды исключений: что тянется из CLR, а что - из более низкого слоя (Windows SEH) *В Процессе*
-- [x] Исключения с особым поведением: ThreadAbortException, OutOfMemoryException и прочие
-- [ ] Каким образом идет сборка стека вызовов и производительность выброса исключений
-- [ ] Асинхронные исключения *Упоминание*
+  - [ ] CLR Exceptions
+    - [ ] Введение
+    - [x] ThreadAbortException
+      - [x] ThreadAbortException во время AppDomain.Unload
+    - [x] ExecutionExgineException
+    - [ ] NullReferenceException
+    - [ ] SecurityException
+    - [ ] OutOfMemoryException
+  - [x] Corrupted State Exceptions
+    - [x] Введение
+    - [x] AccessViolationException
+    - [x] StackOverflowException
+- [ ] Производительность выброса исключений
 
 ## Общая картина
 
