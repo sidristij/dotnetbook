@@ -27,13 +27,13 @@
           1. Mark & Sweep
           1. Оптимизация поколений
           1. Финализация
-          1. Проблемы, связанные с GC и финализацией
-          2. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
-  1. Поток исполнения команд
+          2. Проблемы, связанные с GC и финализацией
+          3. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
+  2. Поток исполнения команд
       1. [Исключительные ситуации](./ExceptionalFlow/1-Exceptions-Intro.md)
-      1. [Архитектура исключительной ситуации](./ExceptionalFlow/2-Exceptions-Architecture.md)
-      1. [События об исключительных ситуациях](./ExceptionalFlow/3-Exceptions-Events.md)
-      1. [Виды исключительных ситуаций](./ExceptionalFlow/4-Exceptions-Types.md)
+      2. [Архитектура исключительной ситуации](./ExceptionalFlow/2-Exceptions-Architecture.md)
+      3. [События об исключительных ситуациях](./ExceptionalFlow/3-Exceptions-Events.md)
+      4. [Виды исключительных ситуаций](./ExceptionalFlow/4-Exceptions-Types.md)
 
 # Лицензия
 
