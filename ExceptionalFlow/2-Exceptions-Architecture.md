@@ -58,9 +58,9 @@ T GetFromCacheOrCalculate()
 
 ```csharp
 
-namespace Ola.Strategies
+namespace InvestBank.Strategies
 {
-    public class FooStrategy
+    public class RiskStrategy
     {
         private Random random =  new Random();
 
@@ -68,21 +68,21 @@ namespace Ola.Strategies
         {
             if(DateTime.Now.Second == (random.Next() % 60))
             {
-                throw new OlalaException();
+                throw new StrategyException();
             }
         }
     }
 
-    public class OlalaException : Exception { /* .. */ }
+    public class StrategyException : Exception { /* .. */ }
 }
 
-namespace Ola.Usings
+namespace InvestBank.Investments
 {
-    public class BooClass
+    public class RiskInvestment
     {
-        FooStrategy _strategy;
+        RiskStrategy _strategy;
 
-        public BooClass(FooStrategy strategy)
+        public RiskInvestment(RiskStrategy strategy)
         {
             _strategy = strategy;
         }
@@ -93,45 +93,45 @@ namespace Ola.Usings
             {
                 _strategy.PlayRussianRoulette();
             }
-            catch(OlalaException exception)
+            catch(StrategyException exception)
             {
             }
         }
     }
 }
 
-using Ola.Strategies;
-using Ola.Usings;
+using InvestBank.Strategies;
+using InvestBank.Investments;
 
 void Main()
 {
-    var foo = new FooStrategy();
-    var boo = new BooClass(foo);
+    var foo = new RiskStrategy();
+    var boo = new RiskInvestment(foo);
 
     ?try?
     {
         boo.DoSomethingWild();
     }
-    catch(OlalaException exception)
+    catch(StrategyException exception)
     {
     }
 }
 
 ```
 
-Какая из двух предложенных стратегий является более корректной? Зона ответственности - это очень важно. Изначально может показаться, что поскольку работа `BooClass` и его консистентность целиком и полностью зависит от `FooStrategy`, то если `BooClass` просто проигнорирует данное исключение, оно уйдет в уровень повыше и делать ничего более не надо. Однако, прошу заметить что существует чисто архитектурная проблема: метод `Main` ловит исключение из архитектурно одного слоя, вызывая метод архитектурно - другого. Как это выглядит с точки зрения использования? Да в общем так и выглядит:
+Какая из двух предложенных стратегий является более корректной? Зона ответственности - это очень важно. Изначально может показаться, что поскольку работа `RiskInvestment` и его консистентность целиком и полностью зависит от `RiskStrategy`, то если `RiskInvestment` просто проигнорирует данное исключение, оно уйдет в уровень повыше и делать ничего более не надо. Однако, прошу заметить что существует чисто архитектурная проблема: метод `Main` ловит исключение из архитектурно одного слоя, вызывая метод архитектурно - другого. Как это выглядит с точки зрения использования? Да в общем так и выглядит:
 
   - заботу об этом исключении просто перевесили на нас;
   - у пользователя данного класса нет уверенности что это исключение прокинуто через ряд методов до нас специально
   - мы начинаем тянуть лишние зависимости, от которых мы избавились, вызывая промежуточный слой.
 
-Однако, из данного вывода следует другой: `catch` мы должны ставить в методе `DoSomethingWild`. И это для нас несколько странно: `BooClass` вроде как жестко зависим от кого-то. Т.е. если `PlayRussianRoulette` отработать не смог, то и `DoSomethingWild` тоже: кодов возврата тот не имеет, а сыграть в рулетку он обязан. Что же делать в такой казалось бы безвыходной ситуации? Ответ на самом деле прост: находясь в другом слое, `DoSomethingWild` должен выбросить собственное исключение, которое относится к этому слою и обернуть исходное как оригинальный источник проблемы - в `InnerException`:
+Однако, из данного вывода следует другой: `catch` мы должны ставить в методе `DoSomethingWild`. И это для нас несколько странно: `RiskInvestment` вроде как жестко зависим от кого-то. Т.е. если `PlayRussianRoulette` отработать не смог, то и `DoSomethingWild` тоже: кодов возврата тот не имеет, а сыграть в рулетку он обязан. Что же делать в такой казалось бы безвыходной ситуации? Ответ на самом деле прост: находясь в другом слое, `DoSomethingWild` должен выбросить собственное исключение, которое относится к этому слою и обернуть исходное как оригинальный источник проблемы - в `InnerException`:
 
 ```csharp
 
-namespace Ola.Strategies
+namespace InvestBank.Strategies
 {
-    pubilc class FooStrategy
+    pubilc class RiskStrategy
     {
         private Random random =  new Random();
 
@@ -139,21 +139,21 @@ namespace Ola.Strategies
         {
             if(DateTime.Now.Second == (random.Next() % 60))
             {
-                throw new OlalaException();
+                throw new StrategyException();
             }
         }
     }
 
-    public class OlalaException : Exception { /* .. */ }
+    public class StrategyException : Exception { /* .. */ }
 }
 
-namespace Ola.Usings
+namespace InvestBank.Investments
 {
-    public class BooClass
+    public class RiskInvestment
     {
-        FooStrategy _strategy;
+        RiskStrategy _strategy;
 
-        public BooClass(FooStrategy strategy)
+        public RiskInvestment(RiskStrategy strategy)
         {
             _strategy = strategy;
         }
@@ -164,28 +164,30 @@ namespace Ola.Usings
             {
                 _strategy.PlayRussianRoulette();
             }
-            catch(OlalaException exception)
+            catch(StrategyException exception)
             {
-                throw new UsageException("Oops", exception);
+                throw new FailedInvestmentException("Oops", exception);
             }
         }
     }
 
-    public class UsageException : Exception { /* .. */ }
+    public class InvestmentException : Exception { /* .. */ }
+
+    public class FailedInvestmentException : Exception { /* .. */ }
 }
 
-using Ola.Usings;
+using InvestBank.Investments;
 
 void Main()
 {
-    var foo = new FooStrategy();
-    var boo = new BooClass(foo);
+    var foo = new RiskStrategy();
+    var boo = new RiskInvestment(foo);
 
     try
     {
         boo.DoSomethingWild();
     }
-    catch(UsageException exception)
+    catch(FailedInvestmentException exception)
     {
     }
 }
