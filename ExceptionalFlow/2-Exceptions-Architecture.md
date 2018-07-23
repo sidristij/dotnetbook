@@ -58,9 +58,9 @@ T GetFromCacheOrCalculate()
 
 ```csharp
 
-namespace InvestBank.Strategies
+namespace JetFinance.Strategies
 {
-    public class RiskStrategy
+    public class WildStrategy : StrategyBase
     {
         private Random random =  new Random();
 
@@ -76,13 +76,13 @@ namespace InvestBank.Strategies
     public class StrategyException : Exception { /* .. */ }
 }
 
-namespace InvestBank.Investments
+namespace JetFinance.Investments
 {
-    public class RiskInvestment
+    public class WildInvestment
     {
-        RiskStrategy _strategy;
+        WildStrategy _strategy;
 
-        public RiskInvestment(RiskStrategy strategy)
+        public WildInvestment(WildStrategy strategy)
         {
             _strategy = strategy;
         }
@@ -100,13 +100,13 @@ namespace InvestBank.Investments
     }
 }
 
-using InvestBank.Strategies;
-using InvestBank.Investments;
+using JetFinance.Strategies;
+using JetFinance.Investments;
 
 void Main()
 {
-    var foo = new RiskStrategy();
-    var boo = new RiskInvestment(foo);
+    var foo = new WildStrategy();
+    var boo = new WildInvestment(foo);
 
     ?try?
     {
@@ -119,19 +119,19 @@ void Main()
 
 ```
 
-Какая из двух предложенных стратегий является более корректной? Зона ответственности - это очень важно. Изначально может показаться, что поскольку работа `RiskInvestment` и его консистентность целиком и полностью зависит от `RiskStrategy`, то если `RiskInvestment` просто проигнорирует данное исключение, оно уйдет в уровень повыше и делать ничего более не надо. Однако, прошу заметить что существует чисто архитектурная проблема: метод `Main` ловит исключение из архитектурно одного слоя, вызывая метод архитектурно - другого. Как это выглядит с точки зрения использования? Да в общем так и выглядит:
+Какая из двух предложенных стратегий является более корректной? Зона ответственности - это очень важно. Изначально может показаться, что поскольку работа `WildInvestment` и его консистентность целиком и полностью зависит от `WildStrategy`, то если `WildInvestment` просто проигнорирует данное исключение, оно уйдет в уровень повыше и делать ничего более не надо. Однако, прошу заметить что существует чисто архитектурная проблема: метод `Main` ловит исключение из архитектурно одного слоя, вызывая метод архитектурно - другого. Как это выглядит с точки зрения использования? Да в общем так и выглядит:
 
   - заботу об этом исключении просто перевесили на нас;
   - у пользователя данного класса нет уверенности что это исключение прокинуто через ряд методов до нас специально
   - мы начинаем тянуть лишние зависимости, от которых мы избавились, вызывая промежуточный слой.
 
-Однако, из данного вывода следует другой: `catch` мы должны ставить в методе `DoSomethingWild`. И это для нас несколько странно: `RiskInvestment` вроде как жестко зависим от кого-то. Т.е. если `PlayRussianRoulette` отработать не смог, то и `DoSomethingWild` тоже: кодов возврата тот не имеет, а сыграть в рулетку он обязан. Что же делать в такой казалось бы безвыходной ситуации? Ответ на самом деле прост: находясь в другом слое, `DoSomethingWild` должен выбросить собственное исключение, которое относится к этому слою и обернуть исходное как оригинальный источник проблемы - в `InnerException`:
+Однако, из данного вывода следует другой: `catch` мы должны ставить в методе `DoSomethingWild`. И это для нас несколько странно: `WildInvestment` вроде как жестко зависим от кого-то. Т.е. если `PlayRussianRoulette` отработать не смог, то и `DoSomethingWild` тоже: кодов возврата тот не имеет, а сыграть в рулетку он обязан. Что же делать в такой казалось бы безвыходной ситуации? Ответ на самом деле прост: находясь в другом слое, `DoSomethingWild` должен выбросить собственное исключение, которое относится к этому слою и обернуть исходное как оригинальный источник проблемы - в `InnerException`:
 
 ```csharp
 
-namespace InvestBank.Strategies
+namespace JetFinance.Strategies
 {
-    pubilc class RiskStrategy
+    pubilc class WildStrategy
     {
         private Random random =  new Random();
 
@@ -147,13 +147,13 @@ namespace InvestBank.Strategies
     public class StrategyException : Exception { /* .. */ }
 }
 
-namespace InvestBank.Investments
+namespace JetFinance.Investments
 {
-    public class RiskInvestment
+    public class WildInvestment
     {
-        RiskStrategy _strategy;
+        WildStrategy _strategy;
 
-        public RiskInvestment(RiskStrategy strategy)
+        public WildInvestment(WildStrategy strategy)
         {
             _strategy = strategy;
         }
@@ -176,12 +176,12 @@ namespace InvestBank.Investments
     public class FailedInvestmentException : Exception { /* .. */ }
 }
 
-using InvestBank.Investments;
+using JetFinance.Investments;
 
 void Main()
 {
-    var foo = new RiskStrategy();
-    var boo = new RiskInvestment(foo);
+    var foo = new WildStrategy();
+    var boo = new WildInvestment(foo);
 
     try
     {
