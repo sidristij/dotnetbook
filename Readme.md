@@ -13,23 +13,24 @@
       1. [Heap basics](./MemoryManagementBasics.md)
       1. [Стек потока](./ThreadStack.md)
       1. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
-      1. [Структура объектов в памяти](./ObjectsStructure.md)
-      1. Small Objects Heap
-      1. Large Objects Heap
-      1. Garbage Collection
-      1. Statics
-  1. Слой управления памятью: как работает CLR
+      2. [Memory, Span](./MemorySpan.md)
+      3. [Структура объектов в памяти](./ObjectsStructure.md)
+      4. Small Objects Heap
+      5. Large Objects Heap
+      6. Garbage Collection
+      7. Statics
+  2. Слой управления памятью: как работает CLR
       1. Подробно про Small Objects Heap
           1. Пример: дамп памяти, влияние pinned objects на аллокацию
-      1. Large Objects Heap
+      2. Large Objects Heap
           1. Пример: как легко испортить кучу, как этого избегать
-      1. Garbage Collection
+      3. Garbage Collection
           1. Mark & Sweep
-          1. Оптимизация поколений
-          1. Финализация
-          2. Проблемы, связанные с GC и финализацией
-          3. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
-  2. Поток исполнения команд
+          2. Оптимизация поколений
+          3. Финализация
+          4. Проблемы, связанные с GC и финализацией
+          5. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
+  3. Поток исполнения команд
       1. [Исключительные ситуации](./ExceptionalFlow/1-Exceptions-Intro.md)
       2. [Архитектура исключительной ситуации](./ExceptionalFlow/2-Exceptions-Architecture.md)
       3. [События об исключительных ситуациях](./ExceptionalFlow/3-Exceptions-Events.md)
