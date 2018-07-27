@@ -1,6 +1,6 @@
 # Memory\<T> и Span\<T>
 
-Как язык так и платформа существуют уже много лет и много лет: и все это время существовало множество средств для работы с неуправляемым кодом. Так почему же сейчас выходит очередной API для работы с неуправляемым кодом если по сути он существовал уже много-много лет? Для того чтобы ответить на этот вопрос достаточно понять чего не хватало нам раньше.
+Как язык, так и платформа существуют уже много лет и много лет: и все это время существовало множество средств для работы с неуправляемым кодом. Так почему же сейчас выходит очередной API для работы с неуправляемым кодом если по сути он существовал уже много-много лет? Для того чтобы ответить на этот вопрос достаточно понять чего не хватало нам раньше.
 
 Разработчики платформы и раньше пытались нам помочь скрасить будни разработки с использованием неуправляемых ресурсов: это и автоматические врапперы для импортируемых методов. И маршаллинг, который в большинстве случаев работатет автоматически. Это также инструкция `stackallloc`, о которой говорится в главе про стек потока. Однако, как по мне если ранние разработчики с использованием языка C# приходили из мира C++ (как сделал это и я), то сейчас они приходят из более высокоуровневых языков (я, например, знаю разработчика, который пришел из JavaScript). А что это означает? Это означает что люди со все большим подозрением начинают относиться к неуправляемым ресурсам и конструкциям, близким по духу к C/C++ и уж тем более - к языку Ассемблера.
 
@@ -154,4 +154,168 @@ Method3(Span<byte> buffer)
 }
 ```
 
-то скорость доступа к исходному буферу будет максимально высокой, т.к. все три экземпляра Span друг на друга не ссылаются: они ссылаются сразу на участок памяти.
+то скорость доступа к исходному буферу будет максимально высокой: вы работаете не с managed объектом, а с managed указателем. Т.е. не с .NET managed типом, а с unsafe типом, заключенным в managed оболочку.
+
+## Span\<T> на примерах
+
+Человек так устроен что зачастую пока он не получит определенного опыта, то конечного понимания, для чего необходим инструмент часто не приходит. А потому, поскольку нам нужен некий опыт, давайте обратимся к примерам:
+
+Одним из самых алогитмически интересных примеров является тип `ValueStringBuilder`, который прикопан где-то в недрах `mscorlib` и почему-то как и многие другие интереснейшие типы данных помечен модификатором `internal`, что означает что если бы не исследование исходного кода mscorlib, о таком замечательном способе оптимизации мы бы никогда не узнали.
+
+Каков основной минус системного типа StringBuilder? Это конечно же его суть: как он сам, так и то, на чем он основан (а это массив символов `char[]`) - являются типами ссылочными. А это значит как минимум две вещи: мы все равно (хоть и немного) нагружаем кучу и второе - увеличиваем шансы промаха по кэшам процессора.
+
+Еще один вопрос, который у меня возникал к StringBuilder - это формирование маленьких строк. Т.е. когда результирующая строка "зуб даю" будет короткой: например, менее 100 символов. Когда мы имеем достаточно короткие форматирования, к производительности возникают вопросы:
+
+```csharp
+    $"{x} is in range [{min};{max}]"
+```
+
+Насколько эта запись хуже чем формирование через StringBuilder? Ответ далеко не всегда очевиден: ведь сначала выделяется память под сам `StringBuilder` (SourceString.Length + args.Length * 8) и если длина не будет угадана, то его длина начнет расти с копированием символов из старого массива в новый. А в результате - необходимо будет вернуть сформированную строку: а это еще одно копирование. Транжирство и расточительство. Вот если бы избавиться от размещения в кче формируемой строки, было бы замечательно: от одной проблемы мы бв избавились.
+
+Взглянем на тип из недр `mscorlib`:
+
+**Класс ValueStringBuilder**
+[/src/mscorlib/shared/System/Text/ValueStringBuilder](https://github.com/dotnet/coreclr/blob/efebb38f3c18425c57f94ff910a50e038d13c848/src/mscorlib/shared/System/Text/ValueStringBuilder.cs)
+
+```csharp
+    internal ref struct ValueStringBuilder
+    {
+        // это поле будет активно если у нас слишком много символов
+        private char[] _arrayToReturnToPool;
+        // это поле будет основным
+        private Span<char> _chars;
+        private int _pos;
+        // тип принимает буфер извне, делигируя выбор его размера вызывающей стороне
+        public ValueStringBuilder(Span<char> initialBuffer)
+        {
+            _arrayToReturnToPool = null;
+            _chars = initialBuffer;
+            _pos = 0;
+        }
+
+        public int Length
+        {
+            get => _pos;
+            set
+            {
+                int delta = value - _pos;
+                if (delta > 0)
+                {
+                    Append('\0', delta);
+                }
+                else
+                {
+                    _pos = value;
+                }
+            }
+        }
+
+        // Получение строки - копирование символов из массива в массив
+        public override string ToString()
+        {
+            var s = new string(_chars.Slice(0, _pos));
+            Clear();
+            return s;
+        }
+
+        // Вставка в середину сопровождается развиганием символов
+        // исходной строки чтобы вставить необходимый: путем копирования
+        public void Insert(int index, char value, int count)
+        {
+            if (_pos > _chars.Length - count)
+            {
+                Grow(count);
+            }
+
+            int remaining = _pos - index;
+            _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
+            _chars.Slice(index, count).Fill(value);
+            _pos += count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Append(char c)
+        {
+            int pos = _pos;
+            if (pos < _chars.Length)
+            {
+                _chars[pos] = c;
+                _pos = pos + 1;
+            }
+            else
+            {
+                GrowAndAppend(c);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void GrowAndAppend(char c)
+        {
+            Grow(1);
+            Append(c);
+        }
+
+        // Если исходного массива, переданного конструктором не хватило
+        // мы выделяем массив из пула свободных необходимого размера
+        // На самом деле идеально было бы если бы алгоритм дополнительно создавал
+        // дискретность в размерах массивов чтобы пул не был бы фрагментированным
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Grow(int requiredAdditionalCapacity)
+        {
+            Debug.Assert(requiredAdditionalCapacity > _chars.Length - _pos);
+
+            char[] poolArray = ArrayPool<char>.Shared.Rent(Math.Max(_pos + requiredAdditionalCapacity, _chars.Length * 2));
+
+            _chars.CopyTo(poolArray);
+
+            char[] toReturn = _arrayToReturnToPool;
+            _chars = _arrayToReturnToPool = poolArray;
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Clear()
+        {
+            char[] toReturn = _arrayToReturnToPool;
+            this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
+            if (toReturn != null)
+            {
+                ArrayPool<char>.Shared.Return(toReturn);
+            }
+        }
+
+        // Пропущенные методы: с ними и так все ясно
+        private void AppendSlow(string s);
+        public bool TryCopyTo(Span<char> destination, out int charsWritten);
+        public void Append(string s);
+        public void Append(char c, int count);
+        public unsafe void Append(char* value, int length);
+        public Span<char> AppendSpan(int length);
+    }
+```
+
+Этот класс по своему функционалу сходен со своим старшим собратом `StringBuilder`, обладая при этом одной интересной и очень важной особенностью: он является значимым типом. Т.е. передается целиком по значению. А новейший модификатор типа `ref`, который приписан к сигнатуре объявления типа говорит нам о том что данный тип обладает дополнительным ограничением: он имеет право находиться только на стеке. Т.е. вывод его экмепляров в поля классов приведет к ошибке. К чему все эти приседания? Для ответа на этот вопрос достаточно посмотреть на класс `StringBuilder`:
+
+**Класс StringBuilder** [/src/mscorlib/src/System/Text/StringBuilder.cs](https://github.com/dotnet/coreclr/blob/68f72dd2587c3365a9fe74d1991f93612c3bc62a/src/mscorlib/src/System/Text/StringBuilder.cs#L47-L62)
+
+```csharp
+public sealed class StringBuilder : ISerializable
+{
+    // A StringBuilder is internally represented as a linked list of blocks each of which holds
+    // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk,
+    // so that is what we do.
+    internal char[] m_ChunkChars;                // The characters in this block
+    internal StringBuilder m_ChunkPrevious;      // Link to the block logically before this block
+    internal int m_ChunkLength;                  // The index in m_ChunkChars that represent the end of the block
+    internal int m_ChunkOffset;                  // The logical offset (sum of all characters in previous blocks)
+    internal int m_MaxCapacity = 0;
+
+    // ...
+
+    internal const int DefaultCapacity = 16;
+```
+
+StringBuilder - это класс, внутри которого находится ссылка на массив символов. Т.е. когда вы создаете его то по сути создается как минимум два объекта: сам StringBuilder и массив символов в как минимум 16 символов (кстати именно поэтому так важно задавать предполагаемую длину строки: ее построение будет идти через генерацию односвязного списка 16-символьных массивов. Согласитесь, расточительство). Что это значит в контексте нашего разговора о типе ValueStringBuilder: capacity по-умолчанию отсутствует, т.к. он заимствует память извне плюс он сам является значимым типом и заставляет пользователя расположить буфер для символов на стеке. Как итог весь экземпляр типа ложится на стек вместе с его содержимым и вопрос оптимизации здесь становится решенным. Нет выделения памяти в куче? Нет проблем с проседанием производительности по куче. Но вы мне скажите: почему тогда не пользоваться ValueStringBuilder (или его самописной версией: сам он internal и нам не доступен) всегда? Ответ такой: надо смотреть на задачу, которая вами решается. Будет ли результирующая строка известного размера? Будет ли она иметь некий известный максимум по длине? Если ответ "да" и если при этом размер строки не выходит за некоторые разумные границы, то можно использовать значимую версию StringBuilder. Иначе, если мы ожидаем длинные строки, переходим на использование обычной версии.
