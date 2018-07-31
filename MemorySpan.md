@@ -373,9 +373,54 @@ public ref readonly struct Span<T>
 }
 ```
 
-Все дело в том что _большой_ .NET Framework и .NET Core 1.* не имеют специальным образом измененного сборщика мусора (в отличии от версии .NET Core 2.0+) и потому вынуждены тащить за собой дополнительный указатель: на начало буфера, с которым идет работа. Т.е. если в рамках `Span` мы говорили о том, что он создает некий контекст (подмножество исходного буфера данных), то здесь . 
+Все дело в том что _большой_ .NET Framework и .NET Core 1.* не имеют специальным образом измененного сборщика мусора (в отличии от версии .NET Core 2.0+) и потому вынуждены тащить за собой дополнительный указатель: на начало буфера, с которым идет работа. Т.е., получается, что `Span` внутри себя работает с управляемыми объектами платформы .NET как с неуправляемыми. Взгляните на внутренности второго варианта структуры: там присутствует три поля. Первое поле - это ссылка на managed объект. Второе - смещение относительно начала этого объекта в байтах чтобы получить начало буфера данных (в строках это - буфер с символами `char`, в массивах - буфер с данными массива). И, наконец, третье поле - количество уложенных друг за другом элементов этого буфера.
+
+Для примера возьмем работу `Span` для строк:
+
+**Файл [coreclr::src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs#L409-L416)**
+
+```csharp
+public static ReadOnlySpan<char> AsSpan(this string text)
+{
+    if (text == null)
+        return default;
+
+    return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
+}
+```
+
+Где `string.GetRawStringData()` выглядит следующим образом:
+
+**Файл с определением полей [coreclr::src/System.Private.CoreLib/src/System/String.CoreCLR.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/src/System/String.CoreCLR.cs#L16-L23)**
+**Файл с определением GetRawStringData [coreclr::src/System.Private.CoreLib/shared/System/String.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/shared/System/String.cs#L462)**
+
+```csharp
+public sealed partial class String :
+    IComparable, IEnumerable, IConvertible, IEnumerable<char>,
+    IComparable<string>, IEquatable<string>, ICloneable
+{
+
+    //
+    // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
+    //
+    [NonSerialized] private int _stringLength;
+
+    // For empty strings, this will be '\0' since
+    // strings are both null-terminated and length prefixed
+    [NonSerialized] private char _firstChar;
+
+
+    internal ref char GetRawStringData() => ref _firstChar;
+}
+```
+
+Т.е. получается, что метод лезет напрямую вовнутрь строки, а спецификация `ref char` позволяет отслеживать GC неуправляемую ссылку во внутрь строки, перемещая его вместе со строкой во время срабатывания GC.
+
+Та же самая история происходит и с массивами: когда создается `Span`, то некий код внутри JIT рассчитывает смещение начала данных массива и этим смещением инициализирует `Span`. А как подсчитать смещения для строк и массивов, мы научились в главе [про структуру объектов в памяти](.\ObjectsStructure.md).
 
 ## Memory\<T> и ReadOnlyMemory\<T>
+
+Отличие `Memory<T>` от `Span<T>` всего одно: оно не содержит ограничения `ref` в заголовке типа. Т.е., другими словами, тип `Memory<T>` имеет право находиться не только на стеке, являясь либо локальной переменной либо параметром метода либо его возвращаемым значением, но и находиться в куче, ссылаясь оттуда на некоторые данные в памяти.
 
 ### MemoryManager\<T>, MemoryHandle
 
