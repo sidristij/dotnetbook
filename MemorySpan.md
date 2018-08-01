@@ -392,6 +392,7 @@ public static ReadOnlySpan<char> AsSpan(this string text)
 Где `string.GetRawStringData()` выглядит следующим образом:
 
 **Файл с определением полей [coreclr::src/System.Private.CoreLib/src/System/String.CoreCLR.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/src/System/String.CoreCLR.cs#L16-L23)**
+
 **Файл с определением GetRawStringData [coreclr::src/System.Private.CoreLib/shared/System/String.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/shared/System/String.cs#L462)**
 
 ```csharp
@@ -418,9 +419,222 @@ public sealed partial class String :
 
 Та же самая история происходит и с массивами: когда создается `Span`, то некий код внутри JIT рассчитывает смещение начала данных массива и этим смещением инициализирует `Span`. А как подсчитать смещения для строк и массивов, мы научились в главе [про структуру объектов в памяти](.\ObjectsStructure.md).
 
+### Span\<T> как возвращаемое значение
+
+Несмотря на всю идиллию, связанную со `Span`, существуют хоть и логичные, но неожиданные ограничения на его возврат из метода. Если взглянуть на следующий код:
+
+```csharp
+unsafe void Main()
+{
+    var x = GetSpan();
+}
+
+public Span<byte> GetSpan()
+{
+    Span<byte> reff = new byte[100];
+    return reff;
+}
+```
+
+то все выглядит крайне логично и хорошо. Однако, стоит заменить одну инструкцию другой:
+
+```csharp
+unsafe void Main()
+{
+    var x = GetSpan();
+}
+
+public Span<byte> GetSpan()
+{
+    Span<byte> reff = stackalloc byte[100];
+    return reff;
+}
+```
+
+как компилятор запретит инструкцию накого толку. Но прежде чем написать, почему, я прошу вас самим догадаться, какие проблемы понесет за собой такая конструкция.
+
+Итак, я надеюсь, что вы подумали, построили догадки и предположения, а может даже и поняли причину. Если так, главу про [стек потока](./ThreadStack.md) я по винтикам расписывал не зря. Ведь дав таким образом ссылку на локальные параменные метода, который закончил работу, вы можете вызвать другой метод, дождаться окончания его работы и через x[0.99] прочитать его локальные переменные.
+
+Однако, к счастью, когда мы делаем попытку написать такого рода код, компилятор дает на по рукам, выдав предупреждение: `CS8352 Cannot use local 'reff' in this context because it may expose referenced variables outside of their declaration scope` и будет прав: ведь если обойти эту ошибку, то возникет возможность, например, находясь в плагине подстроить такую ситуацию что станет возможным украсть чужие пароли или повысить привелегии выполнения нашего плагина.
+
 ## Memory\<T> и ReadOnlyMemory\<T>
 
-Отличие `Memory<T>` от `Span<T>` всего одно: оно не содержит ограничения `ref` в заголовке типа. Т.е., другими словами, тип `Memory<T>` имеет право находиться не только на стеке, являясь либо локальной переменной либо параметром метода либо его возвращаемым значением, но и находиться в куче, ссылаясь оттуда на некоторые данные в памяти.
+Отличие `Memory<T>` от `Span<T>` всего одно: оно не содержит ограничения `ref` в заголовке типа. Т.е., другими словами, тип `Memory<T>` имеет право находиться не только на стеке, являясь либо локальной переменной либо параметром метода либо его возвращаемым значением, но и находиться в куче, ссылаясь оттуда на некоторые данные в памяти. Однако эта маленькая разница создает огромную разницу в поведении и возможностях `Memory<T>` в сравнении с `Span<T>`. Однако, обо всем по порядку.
+
+Первое что сильно бросается в глаза - это даже не то, что эта структура не является `ref` структурой, а наличие метода `Pin()`, который, судя из названия сообщает собрщику мусора, что данный буфер при сборке мусора двигать нельзя, возвращая пользователю экземпляр структуры `MemoryHandle`, инкапсулирующей в себе понятие отрезка жизни `GCHandle`, закрепившего буфер в памяти:
+
+```csharp
+public unsafe struct MemoryHandle : IDisposable
+{
+    private void* _pointer;
+    private GCHandle _handle;
+    private IPinnable _pinnable;  
+
+    /// <summary>
+    /// Создает MemoryHandle для участка памяти
+    /// </summary>
+    public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable pinnable = default)
+    {
+        _pointer = pointer;
+        _handle = handle;
+        _pinnable = pinnable;
+    }
+
+    /// <summary>
+    /// Возвращает указатель на участок памяти, который как предполагается, закреплен и данный адрес не поменяется
+    /// </summary>
+    [CLSCompliant(false)]
+    public void* Pointer => _pointer;
+
+    /// <summary>
+    /// Освобождает _handle и _pinnable, также сбрасывая указатель на память
+    /// </summary>
+    public void Dispose()
+    {
+        if (_handle.IsAllocated)
+        {
+            _handle.Free();
+        }
+
+        if (_pinnable != null)
+        {
+            _pinnable.Unpin();
+            _pinnable = null;
+        }
+
+        _pointer = null;
+    }
+
+}
+```
+
+Теперь взглянем на саму структуру `Memory<T>`:
+
+```csharp
+    public readonly struct Memory<T>
+    {
+        private readonly object _object;
+        private readonly int _index;
+        private readonly int _length;
+
+        public Memory(T[] array) { ... }
+
+        public Memory(T[] array, int start, int length) { ... }
+
+        internal Memory(MemoryManager<T> manager, int length)
+        {
+            // ..
+            _index = (1 << 31); // Mark as MemoryManager type
+        }
+
+        internal Memory(MemoryManager<T> manager, int start, int length) { ... }
+
+        public static implicit operator Memory<T>(T[] array) => new Memory<T>(array);
+        public static implicit operator Memory<T>(ArraySegment<T> segment);
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory);
+
+        public static Memory<T> Empty => default;
+        public int Length => _length & RemoveFlagsBitMask;
+        public bool IsEmpty => (_length & RemoveFlagsBitMask) == 0;
+
+        public Memory<T> Slice(int start, int length);
+        public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
+        public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
+
+        // ...
+    }
+```
+
+Помимо указания полей структуры я решил дополнительно указать на то, что существет отдельный конструктор типа, работающий на еще одной сущности - `MemoryManager`, речь о котором зайдет несколько дальше и что не является чем-то, о чем вы, возможно, только что подумали. Однако, как и `Span`, `Memory` точно также содержит в себе ссылку на объект, по которому будет производить навигация, а также смещение и размер внутреннего буфера. Подробнее же хочется остановиьтся на двух методах этого типа: на свойстве `Span` и методе `Pin`.
+
+### Memory\<T>.Span
+
+```csharp
+public Span<T> Span
+{
+    get
+    {
+        if (_index < 0)
+        {
+            return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
+        }
+        else if (typeof(T) == typeof(char) && _object is string s)
+        {
+            // This is dangerous, returning a writable span for a string that should be immutable.
+            // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+            // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
+            // in which case that's the dangerous operation performed by the dev, and we're just following
+            // suit here to make it work as best as possible.
+            return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
+        }
+        else if (_object != null)
+        {
+            return new Span<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
+        }
+        else
+        {
+            return default;
+        }
+    }
+}
+```
+
+А точнее, на строчки, обрабатывающие работу со строками. Ведь в них говорится о том, что если мы каким-либо образом сконвертировали `ReadOnlyMemory<T>` в `Memory<T>` (а в двоичном представлении это одно и тоже. Мало того, существует комментарий, предупреждающий что бинарно эти два типа обязаны совпадать, т.к. один из другого получается путем вызова `Unsafe.As`), то мы получаем ~доступ в тайную комнату~ возможность менять строки. А это крайне опасный механизм:
+
+```csharp
+unsafe void Main()
+{
+    var str = "Hello!";
+    ReadOnlyMemory<char> ronly = str.AsMemory();
+    Memory<char> mem = (Memory<char>)Unsafe.As<ReadOnlyMemory<char>, Memory<char>>(ref ronly);
+    mem.Span[5] = '?';
+
+    Console.WriteLine(str);
+}
+---
+Hello?
+```
+
+Который в купе с интернированием строк может дать весьма плачевные последствия.
+
+Второй метод, который вызывает не поддельный интерес - это метод `Pin`:
+
+```csharp
+public unsafe MemoryHandle Pin()
+{
+    if (_index < 0)
+    {
+        return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
+    }
+    else if (typeof(T) == typeof(char) && _object is string s)
+    {
+        // This case can only happen if a ReadOnlyMemory<char> was created around a string
+        // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+        // to work, however, so that code that uses a single Memory<char> field to store either
+        // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+        // used for interop purposes.
+        GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+        return new MemoryHandle(pointer, handle);
+    }
+    else if (_object is T[] array)
+    {
+        // Array is already pre-pinned
+        if (_length < 0)
+        {
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer);
+        }
+        else
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer, handle);
+        }
+    }
+    return default;
+}
+```
 
 ### MemoryManager\<T>, MemoryHandle
 
