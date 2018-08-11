@@ -508,7 +508,7 @@ public unsafe struct MemoryHandle : IDisposable
 }
 ```
 
-Однако, взглянем на саму структуру `Memory<T>` (показаны не все члены типа, а показавшиеся наиболее важными):
+Однако, для начала предлагаю познакомиться со всем набором классов. И в качестве первого из них, взглянем на саму структуру `Memory<T>` (показаны не все члены типа, а показавшиеся наиболее важными):
 
 ```csharp
     public readonly struct Memory<T>
@@ -530,7 +530,109 @@ public unsafe struct MemoryHandle : IDisposable
     }
 ```
 
-Помимо указания полей структуры я решил дополнительно указать на то, что существует еще два `internal` конструктора типа, работающих на основании еще одной сущности - `MemoryManager`, речь о котором зайдет несколько дальше и что не является чем-то, о чем вы, возможно, только что подумали: менеджером памяти в классическом понимании. Однако, как и `Span`, `Memory` точно также содержит в себе ссылку на объект, по которому будет производить навигация, а также смещение и размер внутреннего буфера. Также, дополнительно, стоит отметить что `Memory` может быть создан оператором `new` только на основании массива плюс методами расширения - на основании строки, массива и `ArraySegment`. Т.е. его создание на основании unmanaged памяти вручную не подразумевается. 
+Помимо указания полей структуры я решил дополнительно указать на то, что существует еще два `internal` конструктора типа, работающих на основании еще одной сущности - `MemoryManager`, речь о котором зайдет несколько дальше и что не является чем-то, о чем вы, возможно, только что подумали: менеджером памяти в классическом понимании. Однако, как и `Span`, `Memory` точно также содержит в себе ссылку на объект, по которому будет производить навигация, а также смещение и размер внутреннего буфера. Также, дополнительно, стоит отметить что `Memory` может быть создан оператором `new` только на основании массива плюс методами расширения - на основании строки, массива и `ArraySegment`. Т.е. его создание на основании unmanaged памяти вручную не подразумевается. Однако, как мы видим, существует некий внутренний метод создания этой структуры на основании `MemoryManager`:
+
+**Файл [MemoryManager.cs](https://github.com/dotnet/corefx/blob/master/src/Common/src/CoreLib/System/Buffers/MemoryManager.cs)**
+
+```csharp
+public abstract class MemoryManager<T> : IMemoryOwner<T>, IPinnable
+{
+    public abstract MemoryHandle Pin(int elementIndex = 0);
+    public abstract void Unpin();
+
+    public virtual Memory<T> Memory => new Memory<T>(this, GetSpan().Length);
+    public abstract Span<T> GetSpan();
+    protected Memory<T> CreateMemory(int length) => new Memory<T>(this, length);
+    protected Memory<T> CreateMemory(int start, int length) => new Memory<T>(this, start, length);
+
+    void IDisposable.Dispose()
+    protected abstract void Dispose(bool disposing);
+}
+```
+
+Которая является инкапсулирует в себе понятие владельца участка памяти. Другими словами если `Span` - средство работы с памятью, `Memory` - средство хранения информации о конкретном участке, то `MemoryManager` - средство контроля его жизни, его владелец. Для примера можно взять тип `NativeMemoryManager<T>`, который хоть и написан для тестов, однако не плохо отражает суть понятия "владение":
+
+**Файл [NativeMemoryManager.cs](https://github.com/dotnet/corefx/blob/888088448ac5dd1053d88434dfd819dcbc0fd9a1/src/Common/tests/System/Buffers/NativeMemoryManager.cs)**
+
+```csharp
+internal sealed class NativeMemoryManager : MemoryManager<byte>
+{
+    private readonly int _length;
+    private IntPtr _ptr;
+    private int _retainedCount;
+    private bool _disposed;
+
+    public NativeMemoryManager(int length)
+    {
+        _length = length;
+        _ptr = Marshal.AllocHGlobal(length);
+    }
+
+    public override void Pin() { ... }
+
+    public override void Unpin()
+    {
+        lock (this)
+        {
+            if (_retainedCount > 0)
+            {
+                _retainedCount--;
+                if (_retainedCount == 0)
+                {
+                    if (_disposed)
+                    {
+                        Marshal.FreeHGlobal(_ptr);
+                        _ptr = IntPtr.Zero;
+                    }
+                }
+            }
+        }
+    }
+
+    // Другие методы
+}
+```
+
+Т.е., другими словами, класс обеспечивает возможность вложенных вызовов метода `Pin()` подсчитывая тем самым образующиеся ссылки из `unsafe` мира.
+
+Еще одной сущностью, тесно связанной с `Memory` является `MemoryPool`, который обеспечивает пулинг экземпляров `MemoryManager` (а по факту - `IMemoryOwner`):
+
+**Файл [MemoryPool.cs](https://github.com/dotnet/corefx/blob/f592e887e2349ed52af6a83070c42adb9d26408c/src/System.Memory/src/System/Buffers/MemoryPool.cs)**
+
+```csharp
+public abstract class MemoryPool<T> : IDisposable
+{
+    public static MemoryPool<T> Shared => s_shared;
+
+    public abstract IMemoryOwner<T> Rent(int minBufferSize = -1);
+
+    public void Dispose() { ... }
+}
+```
+
+Который предназначен для выдачи буферов необходимого размера во временное пользование. По умолчанию вы можете пользоваться общим пулом буферов, который построен на основе `ArrayMemoryPool`:
+
+**Файл [ArrayMemoryPool.cs](https://github.com/dotnet/corefx/blob/56dfb8834fa50f3bc61ea9b4bfdc9dcc759b6ec9/src/System.Memory/src/System/Buffers/ArrayMemoryPool.cs)**
+
+```csharp
+internal sealed partial class ArrayMemoryPool<T> : MemoryPool<T>
+{
+    private const int MaximumBufferSize = int.MaxValue;
+    public sealed override int MaxBufferSize => MaximumBufferSize;
+    public sealed override IMemoryOwner<T> Rent(int minimumBufferSize = -1)
+    {
+        if (minimumBufferSize == -1)
+            minimumBufferSize = 1 + (4095 / Unsafe.SizeOf<T>());
+        else if (((uint)minimumBufferSize) > MaximumBufferSize)
+            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBufferSize);
+
+        return new ArrayMemoryPoolBuffer(minimumBufferSize);
+    }
+    protected sealed override void Dispose(bool disposing) { }
+}
+```
+
+## Особенности
 
 Подробнее же в разговоре о `Memory` хочется остановиться на двух методах этого типа: на свойстве `Span` и методе `Pin`.
 
