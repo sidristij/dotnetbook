@@ -70,7 +70,7 @@ void Main()
             Thread.ResetAbort();
         }
 
-        "Catched successfully".Dump();
+        "Caught successfully".Dump();
         barrier.SignalAndWait();     // Breakpoint #2
     });
 
