@@ -11,7 +11,7 @@
   - *Значимый тип*:  значением является **вся структура целиком**. Для *ссылочного типа* значением является **ссылка** на объект;
   - По структуре в памяти: значимые типы содержат только те данные, которые вы указали. Ссылочные также содержат два системных поля. Первое необходимо для хранения `SyncBlockIndex`, второе - для хранения информации о типе: в том числе и о Virtual Methods Table (VMT)
   - Однако, ссылочные типы можно наследовать, переопределяя методы. Значимые типы лишены такой возможности;
-  - Но чтобы выделить ссылочный тип, надо аллоцировать место в куче. Значимый тип *может* работать на стеке, не уходя в кучу, а может стать частью ссылочного типа. Это свойство может значительно повысить производительность для некоторых алгоритмов;
+  - Но, чтобы выделить ссылочный тип, надо аллоцировать место в куче. Значимый тип *может* работать на стеке, не уходя в кучу, а может стать частью ссылочного типа. Это свойство может значительно повысить производительность для некоторых алгоритмов;
 
 Однако, есть и общие черты:
 
@@ -108,9 +108,9 @@ Console.WriteLine(list[0].Data);
 // Вариант 1
 struct PersonInfo
 {
-    pubilc int Height;
-    pubilc int Width;
-    pubilc int HairColor;
+    public int Height;
+    public int Width;
+    public int HairColor;
 }
 
 int x = 5;
@@ -131,9 +131,9 @@ int y = 6;
 // Вариант 1
 struct PersonInfo
 {
-    pubilc int Height;
-    pubilc int Width;
-    pubilc int HairColor;
+    public int Height;
+    public int Width;
+    public int HairColor;
 }
 
 class Employee
@@ -147,9 +147,9 @@ class Employee
 class Employee
 {
     public int x;
-    pubilc int Height;
-    pubilc int Width;
-    pubilc int HairColor;
+    public int Height;
+    public int Width;
+    public int HairColor;
     public int y;
 }
 ```
@@ -164,9 +164,9 @@ class Employee
 // Вариант 1
 struct PersonInfo
 {
-    pubilc int Height;
-    pubilc int Width;
-    pubilc int HairColor;
+    public int Height;
+    public int Width;
+    public int HairColor;
 }
 
 void Method(int x, PersonInfo person, int y);
@@ -702,7 +702,7 @@ double? y = (double?)pseudoBoxed;
 
 Значит ли это, что все перечисления выделяются в куче SOH? Значит ли это, что, используя перечисления, мы забиваем кучу, а вместе и с ней - GC? Ведь мы просто используем их. Нет, такого не может быть. Тогда, получается, что есть где-то пул перечислений, в которых они лежат, и что нам отдаются их экземпляры. И снова нет: перечисления можно использовать в структурах при маршаллинге. Перечисления - обычные числа.
 
-А правда заключается в том, что CLR при формировании структур типа данных прямо скажем подхачивает ее, если встечается `enum` [превращая класс в значимый тип](https://github.com/dotnet/coreclr/blob/4b49e4330441db903e6a5b6efab3e1dbb5b64ff3/src/vm/methodtablebuilder.cpp#L1425-L1445):
+А правда заключается в том, что CLR при формировании структур типа данных прямо скажем подхачивает ее, если встречается `enum` [превращая класс в значимый тип](https://github.com/dotnet/coreclr/blob/4b49e4330441db903e6a5b6efab3e1dbb5b64ff3/src/vm/methodtablebuilder.cpp#L1425-L1445):
 
 ```csharp
 // Check to see if the class is a valuetype; but we don't want to mark System.Enum
