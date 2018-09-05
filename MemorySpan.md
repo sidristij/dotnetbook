@@ -661,6 +661,7 @@ public class SpanIndexer
     private ArraySegment<char> segment;
     private string str;
 
+
     [GlobalSetup]
     public void Setup()
     {
@@ -672,34 +673,34 @@ public class SpanIndexer
     [Benchmark(Baseline = true, OperationsPerInvoke = Loops*Count)]
     public void ArrayIndexer_Get()
     {
-        var sum = 0;
+        var tmp = 0;
         for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = arrayField.Length; index < len; index++)
         {
-            sum += arrayField[index];
+            tmp = arrayField[index];
         }
     }
 
     [Benchmark(OperationsPerInvoke = Loops*Count)]
     public void ArraySegmentIndexer_Get()
     {
-        var sum = 0;
+        var tmp = 0;
         var accessor = (IList<char>)segment;
         for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = accessor.Count; index < len; index++)
         {
-            sum += accessor[index];
+            tmp = accessor[index];
         }
     }
 
     [Benchmark(OperationsPerInvoke = Loops*Count)]
     public void StringIndexer_Get()
     {
-        var sum = 0;
+        var tmp = 0;
         for (int _ = 0; _ < Loops*Count; _++)
         for (int index = 0, len = str.Length; index < len; index++)
         {
-            sum += str[index];
+            tmp = str[index];
         }
     }
 
@@ -723,13 +724,13 @@ public class SpanIndexer
 
     private int GetValues(ReadOnlySpan<char> span)
     {
-        var sum = 0;
+        var tmp = 0;
         for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = span.Length; index < len; index++)
         {
-            sum += span[index];
+            tmp = span[index];
         }
-        return sum;
+        return tmp;
     }
 }
 
@@ -766,21 +767,21 @@ Frequency=2533200 Hz, Resolution=394.7576 ns, Timer=TSC
   .NET Core 2.0 : .NET Core 2.0.5 (CoreCLR 4.6.26020.03, CoreFX 4.6.26018.01), 64bit RyuJIT
 
 
-                      Method |           Job |     Toolchain |       Mean |     Error |    StdDev | Scaled | ScaledSD |
----------------------------- |-------------- |-------------- |-----------:|----------:|----------:|-------:|---------:|
-            ArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  0.6707 ns | 0.0097 ns | 0.0086 ns |   1.00 |     0.00 |
-     ArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  4.9904 ns | 0.0944 ns | 0.0927 ns |   7.44 |     0.16 |
-           StringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 | 68.7051 ns | 0.7277 ns | 0.6807 ns | 102.45 |     1.59 |
-        SpanArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  1.1856 ns | 0.0107 ns | 0.0100 ns |   1.77 |     0.03 |
- SpanArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  1.2737 ns | 0.0158 ns | 0.0140 ns |   1.90 |     0.03 |
-       SpanStringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  1.1840 ns | 0.0080 ns | 0.0075 ns |   1.77 |     0.02 |
-                             |               |               |            |           |           |        |          |
-            ArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  0.7458 ns | 0.0064 ns | 0.0050 ns |   1.00 |     0.00 |
-     ArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  4.0962 ns | 0.0188 ns | 0.0176 ns |   5.49 |     0.04 |
-           StringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 | 74.4248 ns | 0.4080 ns | 0.3817 ns |  99.79 |     0.81 |
-        SpanArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  1.3933 ns | 0.0166 ns | 0.0155 ns |   1.87 |     0.02 |
- SpanArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  1.3953 ns | 0.0206 ns | 0.0172 ns |   1.87 |     0.03 |
-       SpanStringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  1.3872 ns | 0.0148 ns | 0.0131 ns |   1.86 |     0.02 |
+                      Method |           Job |     Toolchain |       Mean |     Error | Scaled |
+---------------------------- |-------------- |-------------- |-----------:|----------:|-------:|
+            ArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  0.7669 ns | 0.0149 ns |   1.00 |
+     ArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  4.9948 ns | 0.1527 ns |   6.52 |
+           StringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 | 73.1832 ns | 1.7235 ns |  95.46 |
+        SpanArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |< 1.2212 ns | 0.0145 ns |   1.59 |
+ SpanArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |> 1.1567 ns | 0.0230 ns |   1.51 |
+       SpanStringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |> 1.1697 ns | 0.0230 ns |   1.53 |
+                             |               |               |            |           |        |
+            ArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  0.8171 ns | 0.0146 ns |   1.00 |
+     ArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  4.5616 ns | 0.0826 ns |   5.58 |
+           StringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 | 81.8566 ns | 2.1100 ns | 100.21 |
+        SpanArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |< 1.4781 ns | 0.0335 ns |   1.81 |
+ SpanArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |> 1.4495 ns | 0.0288 ns |   1.77 |
+       SpanStringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |> 1.4545 ns | 0.0282 ns |   1.78 |
 
 ```
 

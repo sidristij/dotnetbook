@@ -26,66 +26,66 @@ namespace SpanPerformanceTests
 		}
 
 		[Benchmark(Baseline = true, OperationsPerInvoke = Loops*Count)]
-		public void ArrayIndexer_Set()
+		public void ArrayIndexer_Get()
 		{
-			var sum = 0;
+			var tmp = 0;
 			for (int _ = 0; _ < Loops; _++)
 			for (int index = 0, len = arrayField.Length; index < len; index++)
 			{
-				sum += arrayField[index];
+				tmp = arrayField[index];
 			}
 		}
 
 		[Benchmark(OperationsPerInvoke = Loops*Count)]
-		public void ArraySegmentIndexer_Set()
+		public void ArraySegmentIndexer_Get()
 		{
-			var sum = 0;
+			var tmp = 0;
 			var accessor = (IList<char>)segment;
 			for (int _ = 0; _ < Loops; _++)
 			for (int index = 0, len = accessor.Count; index < len; index++)
 			{
-				sum += accessor[index];
+				tmp = accessor[index];
 			}
 		}
 
 		[Benchmark(OperationsPerInvoke = Loops*Count)]
-		public void StringIndexer_Set()
+		public void StringIndexer_Get()
 		{
-			var sum = 0;
+			var tmp = 0;
 			for (int _ = 0; _ < Loops*Count; _++)
 			for (int index = 0, len = str.Length; index < len; index++)
 			{
-				sum += str[index];
+				tmp = str[index];
 			}
 		}
 
 		[Benchmark(OperationsPerInvoke = Loops*Count)]
-		public void SpanArrayIndexer_Set()
+		public void SpanArrayIndexer_Get()
 		{
-			SetValues(arrayField);
+			GetValues(arrayField);
 		}
 	
 		[Benchmark(OperationsPerInvoke = Loops*Count)]
-		public void SpanArraySegmentIndexer_Set()
+		public void SpanArraySegmentIndexer_Get()
 		{
-			SetValues(segment);
+			GetValues(segment);
 		}
 	
 		[Benchmark(OperationsPerInvoke = Loops*Count)]
-		public void SpanStringIndexer_Set()
+		public void SpanStringIndexer_Get()
 		{
-			SetValues(str.AsSpan());
+			GetValues(str.AsSpan());
 		}
 	
-		private int SetValues(ReadOnlySpan<char> span)
+		private int GetValues(ReadOnlySpan<char> span)
 		{
-			var sum = 0;
+			var tmp = 0;
 			for (int _ = 0; _ < Loops; _++)
 			for (int index = 0, len = span.Length; index < len; index++)
 			{
-				sum += span[index];
+				tmp = span[index];
 			}
-			return sum;
+			return tmp;
 		}
 	}
 
