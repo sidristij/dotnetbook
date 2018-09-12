@@ -147,6 +147,14 @@ namespace SpanPerformanceTests
 			Add(Job.Default
 				.With(CsProjCoreToolchain.NetCoreApp20) // Span поддерживается CLR
 				.WithId(".NET Core 2.0"));
+
+			Add(Job.Default
+				.With(CsProjCoreToolchain.NetCoreApp21) // Span поддерживается CLR
+				.WithId(".NET Core 2.1"));
+
+			Add(Job.Default
+				.With(CsProjCoreToolchain.NetCoreApp22) // Span поддерживается CLR
+				.WithId(".NET Core 2.2"));
 		}
 	}
 	
