@@ -141,15 +141,21 @@ namespace SpanPerformanceTests
 		public MultipleRuntimesConfig()
 		{
 			Add(Job.Default
-				.With(CsProjClassicNetToolchain.Net471) // Span не поддерживается CLR
-				.WithId(".NET 4.7.1"));
+				.With(CsProjClassicNetToolchain.Net47) // Span не поддерживается CLR
+				.WithId(".NET 4.7"));
+			Add(Job.Default
+				.With(CsProjClassicNetToolchain.Net472) // Span не поддерживается CLR
+				.WithId(".NET 4.7.2"));
 
 			Add(Job.Default
-				.With(CsProjCoreToolchain.NetCoreApp20) // Span поддерживается CLR
-				.WithId(".NET Core 2.0"));
+				.With(CsProjCoreToolchain.NetCoreApp21) // Span поддерживается CLR
+				.WithId(".NET Core 2.1"));
+			Add(Job.Default
+				.With(CsProjCoreToolchain.NetCoreApp22) // Span поддерживается CLR
+				.WithId(".NET Core 2.2"));
 		}
 	}
-	
+
     class Program
     {
         static void Main(string[] args)
