@@ -693,11 +693,10 @@ internal sealed partial class ArrayMemoryPool<T> : MemoryPool<T>
 [Config(typeof(MultipleRuntimesConfig))]
 public class SpanIndexer
 {
-    private const int Loops = 1000, Count = 100;
+    private const int Count = 100;
     private char[] arrayField;
     private ArraySegment<char> segment;
     private string str;
-
 
     [GlobalSetup]
     public void Setup()
@@ -707,67 +706,114 @@ public class SpanIndexer
         segment = new ArraySegment<char>(arrayField);
     }
 
-    [Benchmark(Baseline = true, OperationsPerInvoke = Loops*Count)]
-    public void ArrayIndexer_Get()
+    [Benchmark(Baseline = true, OperationsPerInvoke = Count)]
+    public int ArrayIndexer_Get()
     {
         var tmp = 0;
-        for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = arrayField.Length; index < len; index++)
         {
             tmp = arrayField[index];
         }
+        return tmp;
     }
 
-    [Benchmark(OperationsPerInvoke = Loops*Count)]
-    public void ArraySegmentIndexer_Get()
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void ArrayIndexer_Set()
+    {
+        for (int index = 0, len = arrayField.Length; index < len; index++)
+        {
+            arrayField[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int ArraySegmentIndexer_Get()
     {
         var tmp = 0;
         var accessor = (IList<char>)segment;
-        for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = accessor.Count; index < len; index++)
         {
             tmp = accessor[index];
         }
+        return tmp;
     }
 
-    [Benchmark(OperationsPerInvoke = Loops*Count)]
-    public void StringIndexer_Get()
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void ArraySegmentIndexer_Set()
+    {
+        var accessor = (IList<char>)segment;
+        for (int index = 0, len = accessor.Count; index < len; index++)
+        {
+            accessor[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int StringIndexer_Get()
     {
         var tmp = 0;
-        for (int _ = 0; _ < Loops*Count; _++)
         for (int index = 0, len = str.Length; index < len; index++)
         {
             tmp = str[index];
         }
+
+        return tmp;
     }
 
-    [Benchmark(OperationsPerInvoke = Loops*Count)]
-    public void SpanArrayIndexer_Get()
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanArrayIndexer_Get()
     {
-        GetValues(arrayField);
-    }
-
-    [Benchmark(OperationsPerInvoke = Loops*Count)]
-    public void SpanArraySegmentIndexer_Get()
-    {
-        GetValues(segment);
-    }
-
-    [Benchmark(OperationsPerInvoke = Loops*Count)]
-    public void SpanStringIndexer_Get()
-    {
-        GetValues(str.AsSpan());
-    }
-
-    private int GetValues(ReadOnlySpan<char> span)
-    {
+        var span = arrayField.AsSpan();
         var tmp = 0;
-        for (int _ = 0; _ < Loops; _++)
         for (int index = 0, len = span.Length; index < len; index++)
         {
             tmp = span[index];
         }
         return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanArraySegmentIndexer_Get()
+    {
+        var span = segment.AsSpan();
+        var tmp = 0;
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            tmp = span[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanStringIndexer_Get()
+    {
+        var span = str.AsSpan();
+        var tmp = 0;
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            tmp = span[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void SpanArrayIndexer_Set()
+    {
+        var span = arrayField.AsSpan();
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            span[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void SpanArraySegmentIndexer_Set()
+    {
+        var span = segment.AsSpan();
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            span[index] = '0';
+        }
     }
 }
 
@@ -782,19 +828,19 @@ public class MultipleRuntimesConfig : ManualConfig
         Add(Job.Default
             .With(CsProjCoreToolchain.NetCoreApp20) // Span поддерживается CLR
             .WithId(".NET Core 2.0"));
-    }
-}
 
-class Program
-{
-    static void Main(string[] args)
-    {
-        BenchmarkRunner.Run<SpanIndexer>();
+        Add(Job.Default
+            .With(CsProjCoreToolchain.NetCoreApp21) // Span поддерживается CLR
+            .WithId(".NET Core 2.1"));
+
+        Add(Job.Default
+            .With(CsProjCoreToolchain.NetCoreApp22) // Span поддерживается CLR
+            .WithId(".NET Core 2.2"));
     }
 }
 ```
 
-Посмотрим на результаты:
+После чего изучим результаты:
 
 ![Performance chart](./imgs/Span/Performance.png)
 
@@ -904,7 +950,3 @@ public unsafe MemoryHandle Pin()
     return default;
 }
 ```
-
-## Правила и практика использования
-
-
