@@ -2,6 +2,14 @@
 
 > [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/55)
 
+Начиная с версий .NET Core 2.0 и .NET Framework 4.5 нам стали доступны новые типы данных: это `Span` и `Memory`. Чтобы ими воспользоваться, достаточно установить nuget пакет `System.Memory`:
+
+  - `PM> Install-Package System.Memory`
+
+И примечательны эти типы данных тем, что специально для них была проделана огромная работа командой `CLR` чтобы реализовать их специальную поддержку в коде JIT компилятора .NET Core 2.1+, вживив их прямо в ядро. Что это за типы данных и почему на них стоит выделить целую часть книги?
+
+Если говорить о проблематике, приведшей к появлению данного функционала, я бы выбрал три основные. И первая из них - это неуправляемый код.
+
 Как язык, так и платформа существуют уже много лет: и все это время существовало множество средств для работы с неуправляемым кодом. Так почему же сейчас выходит очередной API для работы с неуправляемым кодом, если, по сути, он существовал уже много-много лет? Для того чтобы ответить на этот вопрос, достаточно понять, чего не хватало нам раньше.
 
 Разработчики платформы и раньше пытались нам помочь скрасить будни разработки с использованием неуправляемых ресурсов: это и автоматические врапперы для импортируемых методов, и маршаллинг, который в большинстве случаев работает автоматически. Это также инструкция `stackalloc`, о которой говорится в главе про стек потока. Однако, как по мне если ранние разработчики с использованием языка C# приходили из мира C++ (как сделал это и я), то сейчас они приходят из более высокоуровневых языков (я, например, знаю разработчика, который пришел из JavaScript). Это означает, что люди со все большим подозрением начинают относиться к неуправляемым ресурсам и конструкциям, близким по духу к C/C++, и уж тем более - к языку Ассемблера.
@@ -27,13 +35,46 @@ unsafe
 }
 ```
 
-Становится понятна причина непопулярности. Посмотрите, не вчитываясь в код, и ответьте для себя на один вопрос: доверяете ли вы ему? Могу предположить что ответом будет "нет". Тогда ответьте на другой: почему? Ответ будет очевиден: помимо того что мы видим слово `Dangerous`, которое как-бы намекает, что что-то может пойти не так, второй фактор, влияющий на наше отношение, - это строчка `byte* buffer = stackalloc byte[s_readBufferSize];`, а если еще конкретнее - `byte*`. Эта запись - триггер для любого, чтобы в голове появилась мысль: "а что, по-другому сделать нельзя было что-ли?". Тогда давайте еще чуть-чуть разберемся с психоанализом: отчего может возникнуть подобная мысль? С одной стороны мы пользуемся конструкциями языка и предложенный здесь синтаксис далек от, например, C++/CLI, который позволяет делать вообще все что угодно (в том числе делать вставки на чистом Assembler), а с другой он выглядит непривычно.
+Становится понятна причина непопулярности. Посмотрите, не вчитываясь в код, и ответьте для себя на один вопрос: доверяете ли вы ему? Могу предположить что ответом будет "нет". Тогда ответьте на другой: почему? Ответ будет очевиден: помимо того что мы видим слово `Dangerous`, которое как-бы намекает, что что-то может пойти не так, второй фактор, влияющий на наше отношение, - это запись `unsafe` и строчка `byte* buffer = stackalloc byte[s_readBufferSize];`, а если еще конкретнее - `byte*`. Эта запись - триггер для любого, чтобы в голове появилась мысль: "а что, по-другому сделать нельзя было что-ли?". Тогда давайте еще чуть-чуть разберемся с психоанализом: отчего может возникнуть подобная мысль? С одной стороны мы пользуемся конструкциями языка и предложенный здесь синтаксис далек от, например, C++/CLI, который позволяет делать вообще все что угодно (в том числе делать вставки на чистом Assembler), а с другой он выглядит непривычно.
 
-Так в чем же вопрос? Как вернуть разработчиков обратно в лоно неуправляемого кода? Необходимо дать им чувство спокойствия, что они не могут сделать ошибку случайно, по незнанию. Итак, для чего же введены `типы Span<T>` и `Memory<T>`?
+Второй вопрос, который явно или неявно возникал в головах у многих разработчиков - это несовместимость типов: строки `string` и массива символов `char[]`, хотя чисто логически строка - это и есть массив символов, привести string к char[] возможности нет никакой: только создание нового объекта и копирование содержимого строки в массив. Причем несовместимость такая введена для оптимизации строк с точки зрения хранения (readonly массивов не существует), но проблемы возникают, когда вы начинаете работать с файлами. Как прочитать? Строкой или массивом? Ведь если массивом, станет не возможным пользоваться некоторыми методами, рассчитанными на работу со строками. А если строкой? Может оказаться слишком длинной. Если речь идет о последующем парсинге, возникает вопрос выбора парсеров примитивов: далеко не всегда хочется парсить их все вручную (целые числа, числа с плавающей точкой, в разных форматах записанных). Есть же множество алгоритмов, проверенных годами, которые делают это быстро и эффективно. Но такие алгоритмы часто работают на строках, в которых кроме самого примитива ничего другого нет. Другими словами, дилемма.
+
+Третья проблематика заключается в том, что необходимые для некоторого алгоритма данные редко лежат от начала и до самого конца считанного с некоторого источника массива. Например, если речь опять же идет о файлах или о данных, считанных с сокета, то есть некоторая уже обработанная неким алгоритмом часть, дальше идет то, что должен обработать некий наш метод, после чего идут данные, которые нам обработать еще предстоит. И этот самый метод в идеале хочет чтобы ему отдали только то что он ожидает. Например, метод парсинга целых чисел вряд-ли будет сильно благодарен, если вы отдадите ему строку с разговором о чём-либо, где в некоторой позиции будет находиться нужное число. Такой метод ожидает что вы отдадите ему число и ничего больше. Если же мы отдадим массив целиком, то возникает требование указать, например, смещение числа относительно начала массива:
+
+```csharp
+int ParseInt(char[] input, int index)
+{
+    while(char.IsDigit(input[index]))
+    {
+        // ...
+        index++;
+    }
+}
+```
+
+Однако, данный способ плох тем что метод получает данные, которые ему не нужны. Другими словами, *метод не введен в контекст своей задачи*. Ведь помимо своей задачи метод решает еще и некоторую внешнюю. А это - признак плохого проектирования. Как избежать данной проблемы? Как вариант, можно воспользоваться типом `ArraySegment<T>`, суть которого - предоставить "окно" в некий массив:
+
+```csharp
+int ParseInt(IList<char>[] input)
+{
+    while(char.IsDigit(input.Array[index]))
+    {
+        // ...
+        index++;
+    }
+}
+
+var arraySegment = new ArraySegment(array, from, length);
+var res = ParseInt((IList<char>)arraySegment);
+```
+
+Но как по мне, так это - перебор как с точки зрения логики, так и с точки зрения просадки по производительности. `ArraySegment` - ужасно сделан и обеспечивает замедление доступа к элементам в 7 раз относительно тех же самых операций, но с массивом.
+
+Так как же решить все эти проблемы? Как вернуть разработчиков обратно в лоно неуправляемого кода, при этом дав им механизм унифицированной и быстрой работы с разнородными источниками данных: массивами, строками и неуправляемой памятью? Необходимо дать им чувство спокойствия, что они не могут сделать ошибку случайно, по незнанию. Необходимо дать им инструмент, не уступающий в производительности нативным типам данных, но решающих перечисленные проблемы. Этим инструментом являются типы  `Span<T>` и `Memory<T>`.
 
 ## Span\<T>, ReadOnlySpan\<T>
 
-Тип `Span` олицетворяет собой инструмент для работы с данными части некоторого массива данных либо поддиапазона его значений. При этом позволяя как и в случае массива работать с элементами этого диапазона как на запись, так и на чтение но с одним важным ограничением: `Span<T>` вы получаете только для того, чтобы временно поработать с массивом. В рамках вызова группы методов, но не более того. Однако, давайте для разгона и общего понимания сравним типы данных, для которых сделана реализация типа `Span`, и посмотрим на возможные сценарии для работы с ним.
+Тип `Span` олицетворяет собой инструмент для работы с данными части некоторого массива данных либо поддиапазона его значений. При этом позволяя как и в случае массива работать с элементами этого диапазона как на запись, так и на чтение но с одним важным ограничением: `Span<T>` вы получаете или создаете только для того, чтобы *временно* поработать с массивом. В рамках вызова группы методов, но не более того. Однако, давайте для разгона и общего понимания сравним типы данных, для которых сделана реализация типа `Span`, и посмотрим на возможные сценарии для работы с ним.
 
 Первый тип данных, о котором хочется завести речь, - это обычный массив. Для массивов работа со `Span` будет выглядеть следующим образом:
 
@@ -344,8 +385,6 @@ public sealed class StringBuilder : ISerializable
 
 В остальных случаях стоит присмотреться либо к `Memory` либо использовать классические типы данных.
 
-**TODO more**
-
 ### Как работает Span
 
 Дополнительно хотелось бы поговорить о том, как работает `Span` и что в нем такого примечательного. А поговорить есть о чем: сам тип данных делится на две версии: для .NET Core 2.0+ и для всех остальных.
@@ -644,7 +683,280 @@ internal sealed partial class ArrayMemoryPool<T> : MemoryPool<T>
   - Если подразумевается, что вам необходимо работать с `unsafe` кодом, передавая туда некий буфер данных, стоит использовать тип `Memory`: он имеет метод `Pin()`, автоматизирующий фиксацию буфера в куче .NET, если тот был там создан.
   - Если же вы имеете некий трафик буферов (например, вы решаете задачу парсинга текста программы или какого-то DSL), стоит воспользоваться типом `MemoryPool`, который можно организовать очень правильным образом, выдавая из пула буферы подходящего размера (например, немного большего если не нашлось подходящего, но с обрезкой `originalMemory.Slice(requiredSize)` чтобы не фрагментировать пул)
 
-## Подвал
+## Производительность
 
-> Место, где копятся примеры и куски идей для формирования текста
-> Пока находятся в ветке chapter/MemorySpan/master
+Для того чтобы понять производительность новых типов данных, я решил воспользоваться уже ставшей стандартной библиотекой [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet):
+
+```csharp
+[Config(typeof(MultipleRuntimesConfig))]
+public class SpanIndexer
+{
+    private const int Count = 100;
+    private char[] arrayField;
+    private ArraySegment<char> segment;
+    private string str;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        str = new string(Enumerable.Repeat('a', Count).ToArray());
+        arrayField = str.ToArray();
+        segment = new ArraySegment<char>(arrayField);
+    }
+
+    [Benchmark(Baseline = true, OperationsPerInvoke = Count)]
+    public int ArrayIndexer_Get()
+    {
+        var tmp = 0;
+        for (int index = 0, len = arrayField.Length; index < len; index++)
+        {
+            tmp = arrayField[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void ArrayIndexer_Set()
+    {
+        for (int index = 0, len = arrayField.Length; index < len; index++)
+        {
+            arrayField[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int ArraySegmentIndexer_Get()
+    {
+        var tmp = 0;
+        var accessor = (IList<char>)segment;
+        for (int index = 0, len = accessor.Count; index < len; index++)
+        {
+            tmp = accessor[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void ArraySegmentIndexer_Set()
+    {
+        var accessor = (IList<char>)segment;
+        for (int index = 0, len = accessor.Count; index < len; index++)
+        {
+            accessor[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int StringIndexer_Get()
+    {
+        var tmp = 0;
+        for (int index = 0, len = str.Length; index < len; index++)
+        {
+            tmp = str[index];
+        }
+
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanArrayIndexer_Get()
+    {
+        var span = arrayField.AsSpan();
+        var tmp = 0;
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            tmp = span[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanArraySegmentIndexer_Get()
+    {
+        var span = segment.AsSpan();
+        var tmp = 0;
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            tmp = span[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public int SpanStringIndexer_Get()
+    {
+        var span = str.AsSpan();
+        var tmp = 0;
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            tmp = span[index];
+        }
+        return tmp;
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void SpanArrayIndexer_Set()
+    {
+        var span = arrayField.AsSpan();
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            span[index] = '0';
+        }
+    }
+
+    [Benchmark(OperationsPerInvoke = Count)]
+    public void SpanArraySegmentIndexer_Set()
+    {
+        var span = segment.AsSpan();
+        for (int index = 0, len = span.Length; index < len; index++)
+        {
+            span[index] = '0';
+        }
+    }
+}
+
+public class MultipleRuntimesConfig : ManualConfig
+{
+    public MultipleRuntimesConfig()
+    {
+        Add(Job.Default
+            .With(CsProjClassicNetToolchain.Net471) // Span не поддерживается CLR
+            .WithId(".NET 4.7.1"));
+
+        Add(Job.Default
+            .With(CsProjCoreToolchain.NetCoreApp20) // Span поддерживается CLR
+            .WithId(".NET Core 2.0"));
+
+        Add(Job.Default
+            .With(CsProjCoreToolchain.NetCoreApp21) // Span поддерживается CLR
+            .WithId(".NET Core 2.1"));
+
+        Add(Job.Default
+            .With(CsProjCoreToolchain.NetCoreApp22) // Span поддерживается CLR
+            .WithId(".NET Core 2.2"));
+    }
+}
+```
+
+После чего изучим результаты:
+
+![Performance chart](./imgs/Span/Performance.png)
+
+Смотря на них можно подчерпнуть следующую информацию:
+
+  - ArraySegment ужасен. Но его можно сделать не таким ужасным, обернув в `Span`. Производительность вырастет при этом в 7 раз;
+  - Если рассматривать `.NET Framework 4.7.1` (а для 4.5 это будет аналогичным), то переход на Span заметно просадит работу с буферами данных. Примерно на 30-35%;
+  - Однако если посмотреть в сторону .NET Core 2.1+, то здесь производительность станет сопоставимой, а с учетом того что Span может работать на части буфера данных, создавая контекст, то вообще быстрее: ведь аналогичным функционалом обладает ArraySegment, который работает крайне медленно.
+
+Отсюда можно сделать простые выводы по использованию этих типов данных:
+
+  - Для `.NET Framework 4.5+` и `.NET Core` их использование даст только один плюс: они быстрее их альтернативы в виде ArraySegment - на подмножестве исходного массива;
+  - Для `.NET Core 2.1+` их использование даст неоспоримое преимущество как перед использованием ArraySegment, так и перед любыми видами ручной реализации `Slice`
+  - Также, что не даст ни один способ унификации массивов - все три способа максимально производительны.
+
+Подробнее же в разговоре о `Memory` хочется остановиться на двух методах этого типа: на свойстве `Span` и методе `Pin`.
+
+### Memory\<T>.Span
+
+```csharp
+public Span<T> Span
+{
+    get
+    {
+        if (_index < 0)
+        {
+            return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
+        }
+        else if (typeof(T) == typeof(char) && _object is string s)
+        {
+            // This is dangerous, returning a writable span for a string that should be immutable.
+            // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+            // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
+            // in which case that's the dangerous operation performed by the dev, and we're just following
+            // suit here to make it work as best as possible.
+            return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
+        }
+        else if (_object != null)
+        {
+            return new Span<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
+        }
+        else
+        {
+            return default;
+        }
+    }
+}
+```
+
+А точнее, на строчки, обрабатывающие работу со строками. Ведь в них говорится о том, что если мы каким-либо образом сконвертировали `ReadOnlyMemory<T>` в `Memory<T>` (а в двоичном представлении это одно и тоже. Мало того, существует комментарий, предупреждающий что бинарно эти два типа обязаны совпадать, т.к. один из другого получается путем вызова `Unsafe.As`), то мы получаем ~доступ в тайную комнату~ возможность менять строки. А это крайне опасный механизм:
+
+```csharp
+unsafe void Main()
+{
+    var str = "Hello!";
+    ReadOnlyMemory<char> ronly = str.AsMemory();
+    Memory<char> mem = (Memory<char>)Unsafe.As<ReadOnlyMemory<char>, Memory<char>>(ref ronly);
+    mem.Span[5] = '?';
+
+    Console.WriteLine(str);
+}
+---
+Hello?
+```
+
+Который в купе с интернированием строк может дать весьма плачевные последствия.
+
+### Memory\<T>.Pin
+
+Второй метод, который вызывает не поддельный интерес - это метод `Pin`:
+
+```csharp
+public unsafe MemoryHandle Pin()
+{
+    if (_index < 0)
+    {
+        return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
+    }
+    else if (typeof(T) == typeof(char) && _object is string s)
+    {
+        // This case can only happen if a ReadOnlyMemory<char> was created around a string
+        // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+        // to work, however, so that code that uses a single Memory<char> field to store either
+        // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+        // used for interop purposes.
+        GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+        return new MemoryHandle(pointer, handle);
+    }
+    else if (_object is T[] array)
+    {
+        // Array is already pre-pinned
+        if (_length < 0)
+        {
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer);
+        }
+        else
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer, handle);
+        }
+    }
+    return default;
+}
+```
+
+Который также является очень важным инструментом унификации: ведь вне зависимости от типа данных, на которые ссылается `Memory<T>`, если мы захотим отдать буфер в неуправляемый код, то единственное, что нам надо сделать - вызвать метод `Pin()` и передать указатель, который будет храниться в свойстве полученной структуры в неуправляемый код:
+
+```csharp
+void PinSample(Memory<byte> memory)
+{
+    using(var handle = memory.Pin())
+    {
+        WinApi.SomeApiMethod(handle.Pointer);
+    }
+}
+```
+
+И в данном коде нет никакой разницы, для чего вызван `Pin()`: для `Memory` над `T[]`, над `string` или же над буфером неуправляемой памяти. Просто для массивов и строк будет создан реальный `GCHandle.Alloc(array, GCHandleType.Pinned)`, а для неуправляемой памяти - просто ничего не произойдет.
