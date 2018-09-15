@@ -367,6 +367,36 @@ public sealed class StringBuilder : ISerializable
 
 #### ValueListBuilder
 
+```csharp
+internal ref partial struct ValueListBuilder<T>
+{
+    private Span<T> _span;
+    private T[] _arrayFromPool;
+    private int _pos;
+
+    public ValueListBuilder(Span<T> initialSpan)
+    {
+        _span = initialSpan;
+        _arrayFromPool = null;
+        _pos = 0;
+    }
+
+    public int Length { get; set; }
+
+    public ref T this[int index] { get; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Append(T item);
+
+    public ReadOnlySpan<T> AsSpan();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Dispose();
+
+    private void Grow();
+}
+```
+
 Второй тип данных, который хочется особенно - отметить - это тип `ValueListBuilder`. Создан он для ситуаций, когда необходимо на короткое время создать некоторую коллекцию элементов и тут же отдать ее в обработку некоторому алгоритму.
 
 Согласитесь: задача очень похожа на задачу `ValueStringBuilder`. Да и решена она очень похожим образом:
