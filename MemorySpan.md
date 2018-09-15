@@ -66,7 +66,7 @@ var res = ParseInt((IList<char>)arraySegment);
 
 ## Span\<T>, ReadOnlySpan\<T>
 
-Тип `Span` олицетворяет собой инструмент для работы с данными части некоторого массива данных либо поддиапазона его значений. При этом позволяя как и в случае массива работать с элементами этого диапазона как на запись, так и на чтение но с одним важным ограничением: `Span<T>` вы получаете только для того, чтобы временно поработать с массивом. В рамках вызова группы методов, но не более того. Однако, давайте для разгона и общего понимания сравним типы данных, для которых сделана реализация типа `Span`, и посмотрим на возможные сценарии для работы с ним.
+Тип `Span` олицетворяет собой инструмент для работы с данными части некоторого массива данных либо поддиапазона его значений. При этом позволяя как и в случае массива работать с элементами этого диапазона как на запись, так и на чтение но с одним важным ограничением: `Span<T>` вы получаете или создаете только для того, чтобы *временно* поработать с массивом. В рамках вызова группы методов, но не более того. Однако, давайте для разгона и общего понимания сравним типы данных, для которых сделана реализация типа `Span`, и посмотрим на возможные сценарии для работы с ним.
 
 Первый тип данных, о котором хочется завести речь, - это обычный массив. Для массивов работа со `Span` будет выглядеть следующим образом:
 
@@ -786,33 +786,7 @@ class Program
 }
 ```
 
-```
-BenchmarkDotNet=v0.11.0, OS=Windows 10.0.16299.547 (1709/FallCreatorsUpdate/Redstone3)
-Intel Core i7-4510U CPU 2.00GHz (Max: 2.60GHz) (Haswell), 1 CPU, 4 logical and 2 physical cores
-Frequency=2533200 Hz, Resolution=394.7576 ns, Timer=TSC
-.NET Core SDK=2.1.4
-  [Host]        : .NET Core 2.0.5 (CoreCLR 4.6.26020.03, CoreFX 4.6.26018.01), 64bit RyuJIT
-  .NET 4.7.1    : .NET Framework 4.7.1 (CLR 4.0.30319.42000), 64bit RyuJIT-v4.7.3130.0
-  .NET Core 2.0 : .NET Core 2.0.5 (CoreCLR 4.6.26020.03, CoreFX 4.6.26018.01), 64bit RyuJIT
-
-
-                      Method |           Job |     Toolchain |       Mean |     Error | Scaled |
----------------------------- |-------------- |-------------- |-----------:|----------:|-------:|
-            ArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  0.7669 ns | 0.0149 ns |   1.00 |
-     ArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |  4.9948 ns | 0.1527 ns |   6.52 |
-           StringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 | 73.1832 ns | 1.7235 ns |  95.46 |
-        SpanArrayIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |< 1.2212 ns | 0.0145 ns |   1.59 |
- SpanArraySegmentIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |> 1.1567 ns | 0.0230 ns |   1.51 |
-       SpanStringIndexer_Get |    .NET 4.7.1 |  CsProjnet471 |> 1.1697 ns | 0.0230 ns |   1.53 |
-                             |               |               |            |           |        |
-            ArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  0.8171 ns | 0.0146 ns |   1.00 |
-     ArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |  4.5616 ns | 0.0826 ns |   5.58 |
-           StringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 | 81.8566 ns | 2.1100 ns | 100.21 |
-        SpanArrayIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |< 1.4781 ns | 0.0335 ns |   1.81 |
- SpanArraySegmentIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |> 1.4495 ns | 0.0288 ns |   1.77 |
-       SpanStringIndexer_Get | .NET Core 2.0 | .NET Core 2.0 |> 1.4545 ns | 0.0282 ns |   1.78 |
-
-```
+![Performance chart](.\imgs\Span\Performance.png)
 
 Подробнее же в разговоре о `Memory` хочется остановиться на двух методах этого типа: на свойстве `Span` и методе `Pin`.
 
