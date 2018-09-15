@@ -503,51 +503,7 @@ public Span<byte> GetSpan()
 Визуальных отличий `Memory<T>` от `Span<T>` два. Первое - тип `Memory<T>` не содержит ограничения `ref` в заголовке типа. Т.е., другими словами, тип `Memory<T>` имеет право находиться не только на стеке, являясь либо локальной переменной, либо параметром метода, либо его возвращаемым значением, но и находиться в куче, ссылаясь оттуда на некоторые данные в памяти. Однако, эта маленькая разница создает огромную разницу в поведении и возможностях `Memory<T>` в сравнении с `Span<T>`. В отличии от `Span<T>`, который представляет собой *средство пользования* неким буфером данных для некоторых методов, тип `Memory<T>` предназначен для *хранения* информации о буфере, а не для работы с ним. Отсюда возникает разница в API:
 
   - `Memory<T>` не содержит методов доступа к данным, которыми он заведует. Вместо этого он имеет свойство `Span` и метод `Slice`, которые возвращают рабочую лошадку - экземпляр типа `Span`.
-  - `Memory<T>` дополнительно содержит метод `Pin()`, предназначенный для сценариев, когда хранящийся буфер необходимо передать в `unsafe` код. При его вызове для случаев, когда память была выделена в .NET, буфер будет закреплен (pinned) и не будет перемещаться при срабатывании GC, возвращая пользователю экземпляр структуры `MemoryHandle`, инкапсулирующей в себе понятие отрезка жизни `GCHandle`, закрепившего буфер в памяти:
-
-```csharp
-public unsafe struct MemoryHandle : IDisposable
-{
-    private void* _pointer;
-    private GCHandle _handle;
-    private IPinnable _pinnable;
-
-    /// <summary>
-    /// Создает MemoryHandle для участка памяти
-    /// </summary>
-    public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable pinnable = default)
-    {
-        _pointer = pointer;
-        _handle = handle;
-        _pinnable = pinnable;
-    }
-
-    /// <summary>
-    /// Возвращает указатель на участок памяти, который как предполагается, закреплен и данный адрес не поменяется
-    /// </summary>
-    [CLSCompliant(false)]
-    public void* Pointer => _pointer;
-
-    /// <summary>
-    /// Освобождает _handle и _pinnable, также сбрасывая указатель на память
-    /// </summary>
-    public void Dispose()
-    {
-        if (_handle.IsAllocated)
-        {
-            _handle.Free();
-        }
-
-        if (_pinnable != null)
-        {
-            _pinnable.Unpin();
-            _pinnable = null;
-        }
-
-        _pointer = null;
-    }
-}
-```
+  - `Memory<T>` дополнительно содержит метод `Pin()`, предназначенный для сценариев, когда хранящийся буфер необходимо передать в `unsafe` код. При его вызове для случаев, когда память была выделена в .NET, буфер будет закреплен (pinned) и не будет перемещаться при срабатывании GC, возвращая пользователю экземпляр структуры `MemoryHandle`, инкапсулирующей в себе понятие отрезка жизни `GCHandle`, закрепившего буфер в памяти.
 
 Однако, для начала предлагаю познакомиться со всем набором классов. И в качестве первого из них, взглянем на саму структуру `Memory<T>` (показаны не все члены типа, а показавшиеся наиболее важными):
 
@@ -568,10 +524,124 @@ public unsafe struct MemoryHandle : IDisposable
         public Memory<T> Slice(int start, int length);
         public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
         public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
+
+        public Span<T> Span { get; }
+        public unsafe MemoryHandle Pin();
     }
 ```
 
-Помимо указания полей структуры я решил дополнительно указать на то, что существует еще два `internal` конструктора типа, работающих на основании еще одной сущности - `MemoryManager`, речь о котором зайдет несколько дальше и что не является чем-то, о чем вы, возможно, только что подумали: менеджером памяти в классическом понимании. Однако, как и `Span`, `Memory` точно также содержит в себе ссылку на объект, по которому будет производиться навигация, а также смещение и размер внутреннего буфера. Также дополнительно стоит отметить, что `Memory` может быть создан оператором `new` только на основании массива плюс методами расширения - на основании строки, массива и `ArraySegment`. Т.е. его создание на основании unmanaged памяти вручную не подразумевается. Однако, как мы видим, существует некий внутренний метод создания этой структуры на основании `MemoryManager`:
+Как мы видим, структура содержит конструктор на основе массивов, но хранит данные в object. Сделано это для того чтобы дополнительно ссылаться на строки, для которых конструктор не предусмотрен, зато предусмотрен метод расширения для типа `string` `AsMemory()`, возвращающий `ReadOnlyMemory`. Однако, поскольку бинарно оба типа должны быть одинаковыми, типом поля `_object` является `Object`.
+
+Далее мы видим два конструктора, работающих на основе `MemoryManager`. О них мы поговорим попозже. Свойства получения размера `Length` и проверки на пустое множество `IsEmpty`. Также имеется метод получения подмножества `Slice` и методы копирования `CopyTo` и `TryCopyTo`.
+
+Подробнее же в разговоре о `Memory` хочется остановиться на двух методах этого типа: на свойстве `Span` и методе `Pin`.
+
+### Memory\<T>.Span
+
+```csharp
+public Span<T> Span
+{
+    get
+    {
+        if (_index < 0)
+        {
+            return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
+        }
+        else if (typeof(T) == typeof(char) && _object is string s)
+        {
+            // This is dangerous, returning a writable span for a string that should be immutable.
+            // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
+            // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
+            // in which case that's the dangerous operation performed by the dev, and we're just following
+            // suit here to make it work as best as possible.
+            return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
+        }
+        else if (_object != null)
+        {
+            return new Span<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
+        }
+        else
+        {
+            return default;
+        }
+    }
+}
+```
+
+А точнее, на строчки, обрабатывающие работу со строками. Ведь в них говорится о том, что если мы каким-либо образом сконвертировали `ReadOnlyMemory<T>` в `Memory<T>` (а в двоичном представлении это одно и тоже. Мало того, существует комментарий, предупреждающий что бинарно эти два типа обязаны совпадать, т.к. один из другого получается путем вызова `Unsafe.As`), то мы получаем ~доступ в тайную комнату~ возможность менять строки. А это крайне опасный механизм:
+
+```csharp
+unsafe void Main()
+{
+    var str = "Hello!";
+    ReadOnlyMemory<char> ronly = str.AsMemory();
+    Memory<char> mem = (Memory<char>)Unsafe.As<ReadOnlyMemory<char>, Memory<char>>(ref ronly);
+    mem.Span[5] = '?';
+
+    Console.WriteLine(str);
+}
+---
+Hello?
+```
+
+Который в купе с интернированием строк может дать весьма плачевные последствия.
+
+### Memory\<T>.Pin
+
+Второй метод, который вызывает не поддельный интерес - это метод `Pin`:
+
+```csharp
+public unsafe MemoryHandle Pin()
+{
+    if (_index < 0)
+    {
+        return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
+    }
+    else if (typeof(T) == typeof(char) && _object is string s)
+    {
+        // This case can only happen if a ReadOnlyMemory<char> was created around a string
+        // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+        // to work, however, so that code that uses a single Memory<char> field to store either
+        // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+        // used for interop purposes.
+        GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+        return new MemoryHandle(pointer, handle);
+    }
+    else if (_object is T[] array)
+    {
+        // Array is already pre-pinned
+        if (_length < 0)
+        {
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer);
+        }
+        else
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+            return new MemoryHandle(pointer, handle);
+        }
+    }
+    return default;
+}
+```
+
+Который также является очень важным инструментом унификации: ведь вне зависимости от типа данных, на которые ссылается `Memory<T>`, если мы захотим отдать буфер в неуправляемый код, то единственное, что нам надо сделать - вызвать метод `Pin()` и передать указатель, который будет храниться в свойстве полученной структуры в неуправляемый код:
+
+```csharp
+void PinSample(Memory<byte> memory)
+{
+    using(var handle = memory.Pin())
+    {
+        WinApi.SomeApiMethod(handle.Pointer);
+    }
+}
+```
+
+И в данном коде нет никакой разницы, для чего вызван `Pin()`: для `Memory` над `T[]`, над `string` или же над буфером неуправляемой памяти. Просто для массивов и строк будет создан реальный `GCHandle.Alloc(array, GCHandleType.Pinned)`, а для неуправляемой памяти - просто ничего не произойдет.
+
+Помимо указания полей структуры я хочу дополнительно указать на то, что существует еще два `internal` конструктора типа, работающих на основании еще одной сущности - `MemoryManager`, речь о котором зайдет несколько дальше и что не является чем-то, о чем вы, возможно, только что подумали: менеджером памяти в классическом понимании. Однако, как и `Span`, `Memory` точно также содержит в себе ссылку на объект, по которому будет производиться навигация, а также смещение и размер внутреннего буфера. Также дополнительно стоит отметить, что `Memory` может быть создан оператором `new` только на основании массива плюс методами расширения - на основании строки, массива и `ArraySegment`. Т.е. его создание на основании unmanaged памяти вручную не подразумевается. Однако, как мы видим, существует некий внутренний метод создания этой структуры на основании `MemoryManager`:
 
 **Файл [MemoryManager.cs](https://github.com/dotnet/corefx/blob/master/src/Common/src/CoreLib/System/Buffers/MemoryManager.cs)**
 
@@ -853,110 +923,3 @@ public class MultipleRuntimesConfig : ManualConfig
   - Для `.NET Framework 4.5+` и `.NET Core` их использование даст только один плюс: они быстрее их альтернативы в виде ArraySegment - на подмножестве исходного массива;
   - Для `.NET Core 2.1+` их использование даст неоспоримое преимущество как перед использованием ArraySegment, так и перед любыми видами ручной реализации `Slice`
   - Также, что не даст ни один способ унификации массивов - все три способа максимально производительны.
-
-Подробнее же в разговоре о `Memory` хочется остановиться на двух методах этого типа: на свойстве `Span` и методе `Pin`.
-
-### Memory\<T>.Span
-
-```csharp
-public Span<T> Span
-{
-    get
-    {
-        if (_index < 0)
-        {
-            return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
-        }
-        else if (typeof(T) == typeof(char) && _object is string s)
-        {
-            // This is dangerous, returning a writable span for a string that should be immutable.
-            // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
-            // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
-            // in which case that's the dangerous operation performed by the dev, and we're just following
-            // suit here to make it work as best as possible.
-            return new Span<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
-        }
-        else if (_object != null)
-        {
-            return new Span<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
-        }
-        else
-        {
-            return default;
-        }
-    }
-}
-```
-
-А точнее, на строчки, обрабатывающие работу со строками. Ведь в них говорится о том, что если мы каким-либо образом сконвертировали `ReadOnlyMemory<T>` в `Memory<T>` (а в двоичном представлении это одно и тоже. Мало того, существует комментарий, предупреждающий что бинарно эти два типа обязаны совпадать, т.к. один из другого получается путем вызова `Unsafe.As`), то мы получаем ~доступ в тайную комнату~ возможность менять строки. А это крайне опасный механизм:
-
-```csharp
-unsafe void Main()
-{
-    var str = "Hello!";
-    ReadOnlyMemory<char> ronly = str.AsMemory();
-    Memory<char> mem = (Memory<char>)Unsafe.As<ReadOnlyMemory<char>, Memory<char>>(ref ronly);
-    mem.Span[5] = '?';
-
-    Console.WriteLine(str);
-}
----
-Hello?
-```
-
-Который в купе с интернированием строк может дать весьма плачевные последствия.
-
-### Memory\<T>.Pin
-
-Второй метод, который вызывает не поддельный интерес - это метод `Pin`:
-
-```csharp
-public unsafe MemoryHandle Pin()
-{
-    if (_index < 0)
-    {
-        return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
-    }
-    else if (typeof(T) == typeof(char) && _object is string s)
-    {
-        // This case can only happen if a ReadOnlyMemory<char> was created around a string
-        // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
-        // to work, however, so that code that uses a single Memory<char> field to store either
-        // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
-        // used for interop purposes.
-        GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
-        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
-        return new MemoryHandle(pointer, handle);
-    }
-    else if (_object is T[] array)
-    {
-        // Array is already pre-pinned
-        if (_length < 0)
-        {
-            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
-            return new MemoryHandle(pointer);
-        }
-        else
-        {
-            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
-            void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
-            return new MemoryHandle(pointer, handle);
-        }
-    }
-    return default;
-}
-```
-
-Который также является очень важным инструментом унификации: ведь вне зависимости от типа данных, на которые ссылается `Memory<T>`, если мы захотим отдать буфер в неуправляемый код, то единственное, что нам надо сделать - вызвать метод `Pin()` и передать указатель, который будет храниться в свойстве полученной структуры в неуправляемый код:
-
-```csharp
-void PinSample(Memory<byte> memory)
-{
-    using(var handle = memory.Pin())
-    {
-        WinApi.SomeApiMethod(handle.Pointer);
-    }
-}
-```
-
-И в данном коде нет никакой разницы, для чего вызван `Pin()`: для `Memory` над `T[]`, над `string` или же над буфером неуправляемой памяти. Просто для массивов и строк будет создан реальный `GCHandle.Alloc(array, GCHandleType.Pinned)`, а для неуправляемой памяти - просто ничего не произойдет.
