@@ -113,10 +113,9 @@ private bool CLR.VerifyForSafety(object obj, AppDomain target)
     if(obj.GetType().Assembly.AppDominLoadedInto.IsShared)
       return true;
 
-    if(AppDomain.CurrentDomain == target)
+    if(AppDomain.CurrentDomain == target || target.IsFullTrust)
       return true;
 
     return Serialization.CheckSerializable(obj);
 }
 ```
-
