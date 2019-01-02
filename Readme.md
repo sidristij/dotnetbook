@@ -31,10 +31,15 @@
           4. Проблемы, связанные с GC и финализацией
           5. [Шаблон Disposable (Disposable Design Principle)](./Disposable.md)
   3. Поток исполнения команд
-      1. [Исключительные ситуации](./ExceptionalFlow/1-Exceptions-Intro.md)
-      2. [Архитектура исключительной ситуации](./ExceptionalFlow/2-Exceptions-Architecture.md)
-      3. [События об исключительных ситуациях](./ExceptionalFlow/3-Exceptions-Events.md)
-      4. [Виды исключительных ситуаций](./ExceptionalFlow/4-Exceptions-Types.md)
+      1. Домены приложений
+        1. [Введение в домены приложений](./AppDomains/1-AppDomains-Intro.md)
+        2. [Изоляция](./AppDomains/2-AppDomains-Isolation.md)
+        3. [Модель безопасности](./AppDomains/3-AppDomains-Security.md)
+      3. Исключительные ситуации
+        1. [Введение в исключительные ситуации](./ExceptionalFlow/1-Exceptions-Intro.md)
+        2. [Архитектура исключительной ситуации](./ExceptionalFlow/2-Exceptions-Architecture.md)
+        3. [События об исключительных ситуациях](./ExceptionalFlow/3-Exceptions-Events.md)
+        4. [Виды исключительных ситуаций](./ExceptionalFlow/4-Exceptions-Types.md)
 
 # Лицензия
 
