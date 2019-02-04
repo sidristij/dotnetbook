@@ -1,12 +1,8 @@
 # Reference Types vs Value Types
 
-> [A link to the discussion]
-> (https://github.com/sidristij/dotnetbook/issues/57)
+> [A link to the discussion](https://github.com/sidristij/dotnetbook/issues/57)
 
-First, let’s talk about Reference Types and Value Types. I think people don’t really understand the differences and benefits of both.
-
-> They usually say reference types store content on the heap and value
-> types store content on the stack, which is wrong.
+First, let’s talk about Reference Types and Value Types. I think people don’t really understand the differences and benefits of both. They usually say reference types store content on the heap and value types store content on the stack, which is wrong.
 
 Let’s discuss the real differences:
 
@@ -31,12 +27,14 @@ example:
 
 ```csharp
 DateTime dt = DateTime.Now;   // Here, we allocate space for DateTime variable when calling a method,
-                              // but it will contain zeros. Next, let’s copy all values of the Now property to dt variable
+                              // but it will contain zeros. Next, let’s copy all 
+                              // values of the Now property to dt variable
 DateTime dt2 = dt;            // Here, we copy the value once again
 
 object obj = new object();    // Here, we create an object by allocating memory on the Small Object Heap,
                               // and put a pointer to the object in obj variable
-object obj2 = obj;            // Here, we copy a reference to this object. Finally, we have one object and two references.
+object obj2 = obj;            // Here, we copy a reference to this object. Finally, 
+                              // we have one object and two references.
 ```
 
 It seems this property produces ambiguous code constructs such as the
@@ -229,7 +227,7 @@ struct HeightHolder
 }
 ```
 
-Here, we perform the operation that is impossible in strong typing. We cast one type to another incompatible one that contains one extra field. We introduce an additional variable inside the Main method. In theory, its value is secret. However, the example code will output the value of a variable, not found in any of the structures inside the `Main()` method. You might consider it a breach in security, but things are not so simple. You cannot get rid of unmanaged code in a program. The main reason is the structure of the thread stack. One can use it to access unmanaged code and play with local variables. You can defend your code from these attacks by randomizing the size of a stack frame. Or, you can delete the information about EBP register to complicate the return of a stack frame. However, this doesn't matter for us now. What we are interested in this example is the following. The "secret" variable goes **before** the definition of hh variable and **after** it in WidthHolder structure (in different places, actually). So why did we easily get its value? The answer is that stack grows from right to left. The variables declared first will have much higher addresses, and those declared later will have lower addresses.
+Here, we perform the operation that is impossible in strong typing. We cast one type to another incompatible one that contains one extra field. We introduce an additional variable inside the Main method. In theory, its value is secret. However, the example code will output the value of a variable, not found in any of the structures inside the `Main()` method. You might consider it a breach in security, but things are not so simple. You cannot get rid of unmanaged code in a program. The main reason is the structure of the thread stack. One can use it to access unmanaged code and play with local variables. You can defend your code from these attacks by randomizing the size of a stack frame. Or, you can delete the information about `EBP` register to complicate the return of a stack frame. However, this doesn't matter for us now. What we are interested in this example is the following. The "secret" variable goes **before** the definition of hh variable and **after** it in WidthHolder structure (in different places, actually). So why did we easily get its value? The answer is that stack grows from right to left. The variables declared first will have much higher addresses, and those declared later will have lower addresses.
 
 ## The behavior when calling instance methods
 
@@ -302,10 +300,11 @@ I should explain the use of the ref keyword. If I didn’t use it, I would get a
 ## The capability to point to the position of elements.
 
 Both structures and classes have another capability to point to the offset of a particular field in respect to the beginning of a structure in memory. This serves several purposes:
-- to work with external APIs in the unmanaged world without having to insert unused fields before a necessary one;
-- to instruct a compiler to locate a field right at the beginning of the (`[FieldOffset(0)]`) type. It will make the work with this type faster. If it is a frequently used field, we can increase application's performance. However, this is true only for value types. In reference types the field with a zero offset contains the address of a virtual methods table, which takes 1 machine word. Even if you address the first field of a class, it will use complex addressing (address + offset). This is because the most used class field is the address of a virtual methods table. The table is necessary to call all the virtual methods;
-- to point to several fields using one address. In this case, the same value is interpreted as different data types. In C++ this data type is called a union;
-- not to bother to declare anything: a compiler will allocate fields optimally. Thus, the final order of fields may be different.
+
+  - to work with external APIs in the unmanaged world without having to insert unused fields before a necessary one;
+  - to instruct a compiler to locate a field right at the beginning of the (`[FieldOffset(0)]`) type. It will make the work with this type faster. If it is a frequently used field, we can increase application's performance. However, this is true only for value types. In reference types the field with a zero offset contains the address of a virtual methods table, which takes 1 machine word. Even if you address the first field of a class, it will use complex addressing (address + offset). This is because the most used class field is the address of a virtual methods table. The table is necessary to call all the virtual methods;
+  - to point to several fields using one address. In this case, the same value is interpreted as different data types. In C++ this data type is called a union;
+  - not to bother to declare anything: a compiler will allocate fields optimally. Thus, the final order of fields may be different.
 
 **General remarks**
 
@@ -339,9 +338,11 @@ Using the FieldOffsetAttribute you can emulate the C/C++ type called a union. It
 different types. Let’s look at the example:
 
 ```csharp
-// If we read the RGBA.Value, we will get an Int32 value accumulating all other fields.
-// However, if we try to read the RGBA.R, RGBA.G, RGBA.B, RGBA.Alpha, we will get separate components of Int32. [StructLayout(LayoutKind.Explicit)]
-
+// If we read the RGBA.Value, we will get an Int32 value accumulating all
+// other fields.
+// However, if we try to read the RGBA.R, RGBA.G, RGBA.B, RGBA.Alpha, we 
+// will get separate components of Int32.
+[StructLayout(LayoutKind.Explicit)]
 public struct RGBA
 {
     [FieldOffset(0)] public uint Value;
@@ -827,5 +828,5 @@ All CLR primitive types are designed this way. We, mere mortals, cannot implemen
 
 ## References
 
-– [The library to get a pointer to an
+- [The library to get a pointer to an
 object](https://github.com/mumusan/dotnetex/blob/master/libs/)
