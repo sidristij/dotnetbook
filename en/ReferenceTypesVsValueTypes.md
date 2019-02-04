@@ -12,7 +12,7 @@ Let’s discuss the real differences:
 
 However, there are common features:
 
-– Both subclasses can inherit the object type and become its representatives.
+  - Both subclasses can inherit the object type and become its representatives.
 
 Let’s look closer at each feature.
 
@@ -20,7 +20,8 @@ Let’s look closer at each feature.
 
 The main difference between the two types is as follows:
 
-– Each variable, class or structure fields or method parameters that take a reference type store **a reference** to a value; – But each variable, class or structure fields or method parameters that take a value type store a value exactly, i.e. an entire structure.
+  - Each variable, class or structure fields or method parameters that take a reference type store **a reference** to a value;
+  - But each variable, class or structure fields or method parameters that take a value type store a value exactly, i.e. an entire structure.
 
 This means that assigning or passing a parameter to a method will copy the value. Even if you change the copy, the original will stay the same. However, if you change reference type fields, this will “affect” all parts with a reference to an instance of a type. Let’s look at the
 example:
@@ -780,7 +781,8 @@ Also, it is interesting that (https://stackoverflow.com/questions/3743762/unboxi
 
 If we talk to any Java developer, we will know two things:
 
-– All value types in Java are boxed, meaning they are not essentially value types. Integers are also boxed. – For the reason of optimization all integers from -128 to 127 are taken from the pool of objects.
+  - All value types in Java are boxed, meaning they are not essentially value types. Integers are also boxed.
+  - For the reason of optimization all integers from -128 to 127 are taken from the pool of objects.
 
 So, why this doesn’t happen in .NET CLR during boxing? It is simple. Because we can change the content of a boxed value type, that is we can do the following:
 
@@ -828,5 +830,4 @@ All CLR primitive types are designed this way. We, mere mortals, cannot implemen
 
 ## References
 
-- [The library to get a pointer to an
-object](https://github.com/mumusan/dotnetex/blob/master/libs/)
+- [The library to get a pointer to an object](https://github.com/mumusan/dotnetex/blob/master/libs/)
