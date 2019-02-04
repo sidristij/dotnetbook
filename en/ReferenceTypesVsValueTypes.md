@@ -10,9 +10,9 @@ First, let’s talk about Reference Types and Value Types. I think people don’
 
 Let’s discuss the real differences:
 
-– *A value type*: its value is **an entire structure**. The value of a reference type is **a reference** to an object. – A structure in memory:
-value types contain only the data you indicated. Reference types also contain two system fields. The first one stores 'SyncBlockIndex', the  second one stores the information about a type, including the information about a Virtual Methods Table (VMT). – Reference types can have methods that are overridden when inherited. Value types cannot be inherited. – You should allocate space on the heap for an instance of a
-reference type. A value type *can* be allocated on the stack, or it becomes the part of a reference type. This sufficiently increases the performance of some algorithms.
+- *A value type*: its value is **an entire structure**. The value of a reference type is **a reference** to an object. – A structure in memory: value types contain only the data you indicated. Reference types also contain two system fields. The first one stores 'SyncBlockIndex', the  second one stores the information about a type, including the information about a Virtual Methods Table (VMT).
+- Reference types can have methods that are overridden when inherited. Value types cannot be inherited.
+- You should allocate space on the heap for an instance of a reference type. A value type *can* be allocated on the stack, or it becomes the part of a reference type. This sufficiently increases the performance of some algorithms.
 
 However, there are common features:
 
@@ -301,7 +301,11 @@ I should explain the use of the ref keyword. If I didn’t use it, I would get a
 
 ## The capability to point to the position of elements.
 
-Both structures and classes have another capability to point to the offset of a particular field in respect to the beginning of a structure in memory. This serves several purposes: – to work with external APIs in the unmanaged world without having to insert unused fields before a necessary one; – to instruct a compiler to locate a field right at the beginning of the (`[FieldOffset(0)]`) type. It will make the work with this type faster. If it is a frequently used field, we can increase application's performance. However, this is true only for value types. In reference types the field with a zero offset contains the address of a virtual methods table, which takes 1 machine word. Even if you address the first field of a class, it will use complex addressing (address + offset). This is because the most used class field is the address of a virtual methods table. The table is necessary to call all the virtual methods; – to point to several fields using one address. In this case, the same value is interpreted as different data types. In C++ this data type is called a union; – not to bother to declare anything: a compiler will allocate fields optimally. Thus, the final order of fields may be different.
+Both structures and classes have another capability to point to the offset of a particular field in respect to the beginning of a structure in memory. This serves several purposes:
+- to work with external APIs in the unmanaged world without having to insert unused fields before a necessary one;
+- to instruct a compiler to locate a field right at the beginning of the (`[FieldOffset(0)]`) type. It will make the work with this type faster. If it is a frequently used field, we can increase application's performance. However, this is true only for value types. In reference types the field with a zero offset contains the address of a virtual methods table, which takes 1 machine word. Even if you address the first field of a class, it will use complex addressing (address + offset). This is because the most used class field is the address of a virtual methods table. The table is necessary to call all the virtual methods;
+- to point to several fields using one address. In this case, the same value is interpreted as different data types. In C++ this data type is called a union;
+- not to bother to declare anything: a compiler will allocate fields optimally. Thus, the final order of fields may be different.
 
 **General remarks**
 
@@ -421,65 +425,18 @@ Each designed feature should reflect its purpose. This doesn’t deal with its n
 
       - For example, if we take a structure of a file header it will be inappropriate to pass a reference from one file to another, e.g. some header.txt file. This would be appropriate when inserting a document in another, not by embedding a file but using a reference in a file system. A good example is shortcut files in Windows OS. However, if we talk about a file header (for example JPEG file header containing metadata about an image size, compression methods, photography parameters, GPS coordinates and other), then we should use structures to design types for parsing the header. If you describe all the headers in structures, you will get the same position of fields in memory as it is in a file. Using simple unsafe `*(Header *)readedBuffer` transformation without deserialization you will get fully filled data structures.
 
-  3. Neither example shows the inheritance of behavior. They show that there is no need to inherit the behavior of these entities. They are self-contained. However, if we take the effectiveness of code into consideration, we will see the choice from another side:
-
-4.  If we need to take some structured data from unmanaged code, we
-    should choose structures. We can also pass data structure to an
-    unsafe method. A reference type is not suitable for this at all.
-5.  A structure is your choice if a type passes the data in method calls
-    (as returned values or as a method parameter) and there is no need
-    to refer to the same value from different places. The perfect
-    example is tuples. If a method returns several values using tuples,
-    it will return a ValueTuple, declared as a structure. The method
-    won’t allocate space on the heap, but will use the stack of the
-    thread, where memory allocation costs nothing.
-6.  If you design a system that creates big traffic of instances that
-    have small size and lifetime, using reference types will lead either
-    to a pool of objects or, if without the pool of objects, to an
-    uncontrolled garbage accumulation on the heap. Some objects will
-    turn into older generations, increasing the load on GC. Using value
-    types in such places (if it’s possible) will give an increase in
-    performance because nothing will pass to the SOH. This will lessen
-    the load on GC and the algorithm will work faster;
+3. Neither example shows the inheritance of behavior. They show that there is no need to inherit the behavior of these entities. They are self-contained. However, if we take the effectiveness of code into consideration, we will see the choice from another side:
+4. If we need to take some structured data from unmanaged code, we should choose structures. We can also pass data structure to an unsafe method. A reference type is not suitable for this at all.
+5. A structure is your choice if a type passes the data in method calls (as returned values or as a method parameter) and there is no need to refer to the same value from different places. The perfect example is tuples. If a method returns several values using tuples, it will return a ValueTuple, declared as a structure. The method won’t allocate space on the heap, but will use the stack of the thread, where memory allocation costs nothing.
+6. If you design a system that creates big traffic of instances that have small size and lifetime, using reference types will lead either to a pool of objects or, if without the pool of objects, to an uncontrolled garbage accumulation on the heap. Some objects will turn into older generations, increasing the load on GC. Using value types in such places (if it’s possible) will give an increase in performance because nothing will pass to the SOH. This will lessen the load on GC and the algorithm will work faster;
 
 Basing on what I’ve said, here is some advice on using structures:
 
-1.  When choosing collections you should avoid big arrays storing big
-    structures. This includes data structures based on arrays. This can
-    lead to a transition to the Large Objects Heap and its
-    fragmentation. It is wrong to think that if our structure has 4
-    fields of the byte type, it will take 4 bytes. We should understand
-    that in 32-bit systems each structure field is aligned on 4 bytes
-    boundaries (each address field should be divided exactly by 4) and
-    in 64-bit systems — on 8 bytes boundaries. The size of an array
-    should depend on the size of a structure and a platform, running a
-    program. In our example with 4 bytes – 85K / (from 4 to 8 bytes per
-    field \* the number of fields = 4) minus the size of an array header
-    equals to about 2 600 elements per array depending on the platform
-    (this should be rounded down). That is not very much. It may have
-    seemed that we could easily reach a magic constant of 20 000
-    elements
-2.  Sometimes you use a big size structure as a source of data and place
-    it as a field in a class, while having one copy replicated to
-    produce a thousand of instances. Then you expand each instance of a
-    class for the size of a structure. It will lead to the swelling of
-    generation zero and transition to generation one and even two. If
-    the instances of a class have a short life period and you think the
-    GC will collect them at generation zero – for 1 ms, you will be
-    disappointed. They are already in generation one and even two. This
-    makes the difference. If the GC collects generation zero for 1 ms,
-    the generations one and two are collected very slowly that will lead
-    to a decrease in efficiency;
-3.  For the same reason you should avoid passing big structures through
-    a series of method calls. If all elements call each other, these
-    calls will take more space on the stack and bring your application
-    to death by StackOverflowException. The next reason is performance.
-    The more copies there are the more slowly everything works.
+  1. When choosing collections you should avoid big arrays storing big structures. This includes data structures based on arrays. This can lead to a transition to the Large Objects Heap and its fragmentation. It is wrong to think that if our structure has 4 fields of the byte type, it will take 4 bytes. We should understand that in 32-bit systems each structure field is aligned on 4 bytes boundaries (each address field should be divided exactly by 4) and in 64-bit systems — on 8 bytes boundaries. The size of an array should depend on the size of a structure and a platform, running a program. In our example with 4 bytes – 85K / (from 4 to 8 bytes per field * the number of fields = 4) minus the size of an array header equals to about 2 600 elements per array depending on the platform (this should be rounded down). That is not very much. It may have seemed that we could easily reach a magic constant of 20 000 elements
+  2. Sometimes you use a big size structure as a source of data and place it as a field in a class, while having one copy replicated to produce a thousand of instances. Then you expand each instance of a class for the size of a structure. It will lead to the swelling of generation zero and transition to generation one and even two. If the instances of a class have a short life period and you think the GC will collect them at generation zero – for 1 ms, you will be disappointed. They are already in generation one and even two. This makes the difference. If the GC collects generation zero for 1 ms, the generations one and two are collected very slowly that will lead to a decrease in efficiency;
+  3. For the same reason you should avoid passing big structures through a series of method calls. If all elements call each other, these calls will take more space on the stack and bring your application to death by StackOverflowException. The next reason is performance. The more copies there are the more slowly everything works.
 
-That’s why the choice of a data type is not an obvious process. Often,
-this can refer to a premature optimization, which is not recommended.
-However, if you know your situation falls within above stated
-principles, you can easily choose a value type.
+That’s why the choice of a data type is not an obvious process. Often, this can refer to a premature optimization, which is not recommended. However, if you know your situation falls within above stated principles, you can easily choose a value type.
 
 ## The Object base type and implementation of interfaces. Boxing
 
@@ -490,7 +447,7 @@ Now, let's remember again how value types are allocated in memory. They get the 
 This may bring the idea that the lack of inheritance is artificial:
 
 - there is inheritance from an object, but not direct; 
-- there are ToString, Equals and GetHashCode inside a base type. In value types these methods have their own behavior. This means, that methods are overridden in relation to an `object`; 
+- there are ToString, Equals and GetHashCode inside a base type. In value types these methods have their own behavior. This means, that methods are overridden in relation to an `object`;
 - moreover, if you cast a type to an `object`, you have the full right to call ToString, Equals and GetHashCode;
 - when calling an instance method for a value type, the method gets another structure that is a copy of an original. That means calling an instance method is like calling a static method: `Method(ref structInstance, newInternalFieldValue)`. Indeed, this call passes `this`, with one exception, however. A JIT should compile the body of a method, so it would be unnecessary to offset structure fields, jumping over the pointer to a virtual methods table, which doesn’t exist in the structure. *It exists for value types in another place*.
 
@@ -842,32 +799,17 @@ void ChangeValue(Object^ obj)
 }
 ```
 
-If we dealt with pooling, then we would change all ones in application
-to 138, which is not good.
+If we dealt with pooling, then we would change all ones in application to 138, which is not good.
 
-The next is the essence of value types in .NET. They deal with value,
-meaning they work faster. Boxing is rare and addition of boxed numbers
-belongs to the world of fantasy and bad architecture. This is not useful
-at all.
+The next is the essence of value types in .NET. They deal with value, meaning they work faster. Boxing is rare and addition of boxed numbers belongs to the world of fantasy and bad architecture. This is not useful at all.
 
 ## Why it is not possible to do boxing on stack instead of the heap, when you call a method that takes an object type, which is a value type in fact?
 
-If the value type boxing is done on the stack and the reference will go
-to the heap, the reference inside the method can go somewhere else, for
-example a method can put the reference in the field of a class. The
-method will then stop, and the method that made boxing will also stop.
-As a result, the reference will point to a dead space on the stack.
+If the value type boxing is done on the stack and the reference will go to the heap, the reference inside the method can go somewhere else, for example a method can put the reference in the field of a class. The method will then stop, and the method that made boxing will also stop. As a result, the reference will point to a dead space on the stack.
 
 ## Why it is not possible to use Value Type as a field?
 
-Sometimes we want to use a structure as a field of another structure
-which uses the first one. Or simpler: use structure as a structure
-field. Don't ask me why this can be useful. It cannot. If you use a
-structure as its field or through dependence with another structure, you
-create recursion, which means infinite size structure. However, .NET
-Framework has some places where you can do it. An example is
-`System.Char`, which contains itself
-http://referencesource.microsoft.com/#mscorlib/system/char.cs,02f2b1a33b09362d):
+Sometimes we want to use a structure as a field of another structure which uses the first one. Or simpler: use structure as a structure field. Don't ask me why this can be useful. It cannot. If you use a structure as its field or through dependence with another structure, you create recursion, which means infinite size structure. However, .NET Framework has some places where you can do it. An example is `System.Char`, [which contains itself](http://referencesource.microsoft.com/#mscorlib/system/char.cs,02f2b1a33b09362d):
 
 ```csharp
 public struct Char : IComparable, IConvertible
@@ -886,4 +828,4 @@ All CLR primitive types are designed this way. We, mere mortals, cannot implemen
 ## References
 
 – [The library to get a pointer to an
-object](https://github.com/mumusan/dotnetex/blob/master/libs/)"
+object](https://github.com/mumusan/dotnetex/blob/master/libs/)
