@@ -507,13 +507,10 @@ It will allow us to deal with number 10 using a base class. This is called boxin
 - the CLR allocates space on the heap for a structure + SyncBlockIndex + VMT of a value type (to call ToString, GetHashCode, Equals);
 - it copies an instance of a value type there.
 
-Now, we’ve got a reference variant of a value type. A structure has got
-**absolutely the same set of system fields as a reference type**,
-becoming a fully-fledged reference type after boxing. The structure
-became a class. Let’s call it a .NET somersault. This is a fair name.
+Now, we’ve got a reference variant of a value type. A structure has got **absolutely the same set of system fields as a reference type**,
+becoming a fully-fledged reference type after boxing. The structure became a class. Let’s call it a .NET somersault. This is a fair name.
 
-Just look at what happens if you use a structure which implements an
-interface using the same interface.
+Just look at what happens if you use a structure which implements an interface using the same interface.
 
 ```csharp
 
@@ -522,7 +519,7 @@ struct Foo : IBoo
     int x;
     void Boo()
     {
-        x = 666;"
+        x = 666;
     }
 }
 
@@ -531,21 +528,14 @@ IBoo boo = new Foo();
 boo.Boo();
 ```
 
-When we create the Foo instance, its value goes to the stack in fact.
-Then we put this variable into an interface type variable and the
-structure into a reference type variable. Next, there is boxing and we
-have the object type as an output. But it is an interface type variable.
-That means we need type conversion. So, the call happens in a way like
-this:
+When we create the Foo instance, its value goes to the stack in fact. Then we put this variable into an interface type variable and the structure into a reference type variable. Next, there is boxing and we have the object type as an output. But it is an interface type variable. That means we need type conversion. So, the call happens in a way like this:
 
 ```csharp
-
 IBoo boo = (IBoo)(box_to_object)new Foo();
 boo.Boo();
 ```
 
-Writing such code is not effective. You will have to change a copy
-instead of an original:
+Writing such code is not effective. You will have to change a copy instead of an original:
 
 ```csharp
 void Main()
@@ -555,8 +545,8 @@ void Main()
     Console.WriteLite(foo.a);   // -> 1
 
     IBoo boo = foo;
-    boo.Boo();              // looks like changing foo.a to 10 
-    Console.WriteLite(foo.a);   // -> 1 
+    boo.Boo();                  // looks like changing foo.a to 10
+    Console.WriteLite(foo.a);   // -> 1
 }
 
 struct Foo: IBoo
@@ -574,20 +564,10 @@ interface IBoo
 }
 ```
 
-The first time we look at the code, we don’t have to know what we deal
-with in the code *other than our own* and see a cast to IBoo interface.
-This makes us think Foo is a class and not a structure. Then there is no
-visual division in structures and classes, which makes us think the
-interface modification results must get into foo, which doesn’t happen
-as boo is a copy of foo. That is misleading. In my opinion, this code
-should get comments, so other developers could deal with it.
+The first time we look at the code, we don’t have to know what we deal with in the code *other than our own* and see a cast to IBoo interface. This makes us think Foo is a class and not a structure. Then there is no visual division in structures and classes, which makes us think the
+interface modification results must get into foo, which doesn’t happen as boo is a copy of foo. That is misleading. In my opinion, this code should get comments, so other developers could deal with it.
 
-The second thing relates to the previous thoughts that we can cast a
-type from an object to IBoo. This is another proof that a boxed value
-type is a reference variant of a value type. Or, all types in a system
-of types are reference types. We can just work with structures as with
-value types, passing their value entirely. Dereferencing a pointer to an
-object as you would say in the world of C++.
+The second thing relates to the previous thoughts that we can cast a type from an object to IBoo. This is another proof that a boxed value type is a reference variant of a value type. Or, all types in a system of types are reference types. We can just work with structures as with value types, passing their value entirely. Dereferencing a pointer to an object as you would say in the world of C++.
 
 You can object that if it was true, it would look like this:
 
@@ -595,10 +575,7 @@ You can object that if it was true, it would look like this:
 var referenceToInteger = (IInt32)10;
 ```
 
-We would get not just an object, but a typed reference for a boxed value
-type. It would destroy the whole idea of value types (i.e. integrity of
-their value) allowing for great optimization, based on their properties.
-Let’s take down this idea!
+We would get not just an object, but a typed reference for a boxed value type. It would destroy the whole idea of value types (i.e. integrity of their value) allowing for great optimization, based on their properties. Let’s take down this idea!
 
 ```csharp
 public sealed class Boxed<T>
@@ -609,8 +586,8 @@ public sealed class Boxed<T>
      public override bool Equals(object obj)
      {
          return Value.Equals(obj);
-     } 
- 
+     }
+
      [MethodImpl(MethodImplOptions.AggressiveInlining)]
      public override string ToString()
 
@@ -626,22 +603,14 @@ public sealed class Boxed<T>
 }
 ```
 
-We’ve got a complete analog of boxing. However, we can change its
-contents by calling instance methods. These changes will affect all
-parts with a reference to this data structure.
+We’ve got a complete analog of boxing. However, we can change its contents by calling instance methods. These changes will affect all parts with a reference to this data structure.
 
 ```csharp
 var typedBoxing = new Boxed<int> { Value = 10 };
 var pureBoxing = (object)10;
 ```
 
-The first variant isn’t very attractive. Instead of casting a type we
-create nonsense. The second line is much better, but the two lines are
-almost identical. The only difference is that there is no memory
-cleaning with zeros during the usual boxing after allocating memory on
-the heap. The necessary structure takes the memory straight away whereas
-the first variant needs cleaning. This makes it work longer than the
-usual boxing by 10%.
+The first variant isn’t very attractive. Instead of casting a type we create nonsense. The second line is much better, but the two lines are almost identical. The only difference is that there is no memory cleaning with zeros during the usual boxing after allocating memory on the heap. The necessary structure takes the memory straight away whereas the first variant needs cleaning. This makes it work longer than the usual boxing by 10%.
 
 Instead, we can call some methods for our boxed value.
 
@@ -662,21 +631,12 @@ var unboxed = boxed.Value;
 
 We’ve got a new instrument. Let's think what we can do with it.
 
-– Our Boxed<T> type does the same as the usual type: allocates memory on
-the heap, passes a value there and allows to get it, by doing a kind of
-unbox; – If you lose a reference to a boxed structure, the GC will
-collect it; – However, we can now work with a boxed type, i.e. calling
-its methods; – Also, we can replace an instance of a value type in the
-SOH/LOH for another one. We couldn’t do it before, as we would have to
-do unboxing, change structure to another one and do boxing back, giving
-a new reference to customers.
+- Our `Boxed<T>` type does the same as the usual type: allocates memory on the heap, passes a value there and allows to get it, by doing a kind of unbox;
+- If you lose a reference to a boxed structure, the GC will collect it;
+- However, we can now work with a boxed type, i.e. calling its methods;
+- Also, we can replace an instance of a value type in the SOH/LOH for another one. We couldn’t do it before, as we would have to do unboxing, change structure to another one and do boxing back, giving a new reference to customers.
 
-The main problem of boxing is creating traffic in memory. The traffic of
-unknown number of objects, the part of which can survive up to
-generation one, where we get problems with garbage collection. There
-will be a lot of garbage and we could have avoided it. But when we have
-the traffic of short-lived objects, the first solution is pooling. This
-is an ideal end of .NET somersault.
+The main problem of boxing is creating traffic in memory. The traffic of unknown number of objects, the part of which can survive up to generation one, where we get problems with garbage collection. There will be a lot of garbage and we could have avoided it. But when we have the traffic of short-lived objects, the first solution is pooling. This is an ideal end of .NET somersault.
 
 ```csharp
 var pool = new Pool<Boxed<Foo>>(maxCount:1000);
@@ -688,22 +648,12 @@ boxed.Value=70;
 pool.Free(boxed);
 ```
 
-Now boxing can work using a pool, which eliminates memory traffic while
-boxing. We can even make objects go back to life in finalization method
-and put themselves back into the pool. This might be useful when a boxed
-structure goes to asynchronous code other than yours and you cannot
-understand when it became unnecessary. In this case, it will return
-itself back to pool during GC.
+Now boxing can work using a pool, which eliminates memory traffic while boxing. We can even make objects go back to life in finalization method and put themselves back into the pool. This might be useful when a boxed structure goes to asynchronous code other than yours and you cannot understand when it became unnecessary. In this case, it will return itself back to pool during GC.
 
 Let’s conclude:
 
-– If boxing is accidental and shouldn’t happen, don’t make it happen. It
-can lead to problems with performance. – If boxing is necessary for the
-architecture of a system, there may be variants. If the traffic of boxed
-structures is small and almost invisible, you can use boxing. If the
-traffic is visible, you might want to do the pooling of boxing, using
-one of the solutions stated above. It spends some resources, but makes
-GC work without overload;
+- If boxing is accidental and shouldn’t happen, don’t make it happen. It can lead to problems with performance.
+- If boxing is necessary for the architecture of a system, there may be variants. If the traffic of boxed structures is small and almost invisible, you can use boxing. If the traffic is visible, you might want to do the pooling of boxing, using one of the solutions stated above. It spends some resources, but makes GC work without overload;
 
 Ultimately let’s look at a totally impractical code:
 
@@ -720,7 +670,7 @@ static unsafe void Main()
     {
         // here we get a Virtual Methods Table address
         var structVmt = typeof(SimpleIntHolder).TypeHandle.Value.ToPointer();
-   
+
        // change the VMT address of the integer passed to Heap into a VMT SimpleIntHolder, turning Int into a structure
        *address = structVmt;
     }
@@ -746,18 +696,15 @@ struct SimpleIntHolder : IGetterByInterface
 }
 ```
 
-The code uses a small function, which can get a pointer from a reference
-to an object. The library is available at [github address]
-(https://github.com/mumusan/dotnetex/blob/master/libs/). This example
-shows that usual boxing turns int into a typed reference type. Let’s
+The code uses a small function, which can get a pointer from a reference to an object. The library is available at [github address](https://github.com/mumusan/dotnetex/blob/master/libs/). This example shows that usual boxing turns int into a typed reference type. Let’s
 look at the steps in the process:
 
-1.  Do boxing for an integer.
-2.  Get the address of an obtained object (the address of Int32 VMT)
-3.  Get the VMT of a SimpleIntHolder
-4.  Replace the VMT of a boxed integer to the VMT of a structure.
-5.  Make unboxing into a structure type
-6.  Display the field value on screen, getting the Int32, that was
+1. Do boxing for an integer.
+2. Get the address of an obtained object (the address of Int32 VMT)
+3. Get the VMT of a SimpleIntHolder
+4. Replace the VMT of a boxed integer to the VMT of a structure.
+5. Make unboxing into a structure type
+6. Display the field value on screen, getting the Int32, that was
     boxed.
 
 I do it via the interface on purpose as I want to show that it will work
@@ -765,9 +712,7 @@ that way.
 
 ### Nullable\<T\>
 
-It is worth mentioning about the behavior of boxing with Nullable value
-types. This feature of Nullable value types is very attractive as the
-boxing of a value type which is a sort of null returns null.
+It is worth mentioning about the behavior of boxing with Nullable value types. This feature of Nullable value types is very attractive as the boxing of a value type which is a sort of null returns null.
 
 ```csharp
 int? x = 5;
@@ -791,14 +736,7 @@ with null.
 
 ## Going deeper in boxing
 
-As a final bit, I would like to tell you about [System.Enum] type
-(http://referencesource.microsoft.com/#mscorlib/system/enum.cs,36729210e317a805).
-Logically this should be a value type as it’s a usual enumeration:
-aliasing numbers to names in a programming language. However,
-System.Enum is a reference type. All the enum data types, defined in
-your field as well as in .NET Framework are inherited from System.Enum.
-It’s a class data type. Moreover, it’s an abstract class, inherited from
-`System.ValueType`.
+As a final bit, I would like to tell you about [System.Enum type](http://referencesource.microsoft.com/#mscorlib/system/enum.cs,36729210e317a805). Logically this should be a value type as it’s a usual enumeration: aliasing numbers to names in a programming language. However, System.Enum is a reference type. All the enum data types, defined in your field as well as in .NET Framework are inherited from System.Enum. It’s a class data type. Moreover, it’s an abstract class, inherited from `System.ValueType`.
 
 ```csharp
     [Serializable]
@@ -809,15 +747,9 @@ It’s a class data type. Moreover, it’s an abstract class, inherited from
     }
 ```
 
-Does it mean that all enumerations are allocated on the SOH and when we
-use them, we overload the heap and GC? Actually no, as we just use them.
-Then, we suppose that there is a pool of enumerations somewhere and we
-just get their instances. No, again. You can use enumerations in
-structures while marshaling. Enumerations are usual numbers.
+Does it mean that all enumerations are allocated on the SOH and when we use them, we overload the heap and GC? Actually no, as we just use them. Then, we suppose that there is a pool of enumerations somewhere and we just get their instances. No, again. You can use enumerations in structures while marshaling. Enumerations are usual numbers.
 
-The truth is that CLR hacks data type structure when forming it if there
-is enum [turning a class into a value type]
-(https://github.com/dotnet/coreclr/blob/4b49e4330441db903e6a5b6efab3e1dbb5b64ff3/src/vm/methodtablebuilder.cpp#L1425-L1445):
+The truth is that CLR hacks data type structure when forming it if there is enum [turning a class into a value type](https://github.com/dotnet/coreclr/blob/4b49e4330441db903e6a5b6efab3e1dbb5b64ff3/src/vm/methodtablebuilder.cpp#L1425-L1445):
 
 ```csharp
 // Check to see if the class is a valuetype; but we don't want to mark System.Enum
@@ -843,24 +775,16 @@ if(HasParent() &&
 }
 ```
 
-Why doing this? In particular, because the idea of inheritance — to do a
-customized enum, you, for example, need to specify the names of possible
-values. However, it is impossible to inherit value types. So, developers
-designed it to be a reference type that can turn it into a value type
-when compiled.
+Why doing this? In particular, because the idea of inheritance — to do a customized enum, you, for example, need to specify the names of possible values. However, it is impossible to inherit value types. So, developers designed it to be a reference type that can turn it into a value type when compiled.
 
 ## What if you want to see boxing personally?
 
-Fortunately, you don’t have to use a disassembler and get into the code
-jungle. We have the texts of the whole .NET platform core and many of
-them are identical in terms of .NET Framework CLR and CoreCLR. You can
-click the links below and see the implementation of boxing right away:
+Fortunately, you don’t have to use a disassembler and get into the code jungle. We have the texts of the whole .NET platform core and many of them are identical in terms of .NET Framework CLR and CoreCLR. You can click the links below and see the implementation of boxing right away:
 
 -   There is a separate group of optimizations each of which uses a
     specific type of a processor:
     -   *[JIT\_BoxFastMP\_InlineGetThread](https://github.com/dotnet/coreclr/blob/master/src/vm/amd64/JitHelpers_InlineGetThread.asm#L86-L148)*
-        (AMD64 - multiprocessor or Server GC, implicit Thread Local
-        Storage)
+        (AMD64 - multiprocessor or Server GC, implicit Thread Local Storage)
     -   *[JIT\_BoxFastMP](https://github.com/dotnet/coreclr/blob/8cc7e35dd0a625a3b883703387291739a148e8c8/src/vm/amd64/JitHelpers_Slow.asm#L201-L271)*
         (AMD64 - multiprocessor or Server GC)
     -   *[JIT\_BoxFastUP](https://github.com/dotnet/coreclr/blob/8cc7e35dd0a625a3b883703387291739a148e8c8/src/vm/amd64/JitHelpers_Slow.asm#L485-L554)*
@@ -873,22 +797,12 @@ click the links below and see the implementation of boxing right away:
     [MethodTable::Box(..)](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.cpp#L3734-L3783)
     -   Finally, [CopyValueClassUnchecked(..)] is called
         (https://github.com/dotnet/coreclr/blob/master/src/vm/object.cpp#L1514-L1581).
-        Its code shows why it’s better to choose structures with the
-        size up to 8 bytes included.
+        Its code shows why it’s better to choose structures with the size up to 8 bytes included.
 
 Here, the only method is used for unboxing:
-*[JIT\_Unbox(..)](https://github.com/dotnet/coreclr/blob/03bec77fb4efaa397248a2b9a35c547522221447/src/vm/jithelpers.cpp#L3603-L3626)*,which
-is a wrapper around
-*[JIT\_Unbox\_Helper(..)](https://github.com/dotnet/coreclr/blob/03bec77fb4efaa397248a2b9a35c547522221447/src/vm/jithelpers.cpp#L3574-L3600)*.
+*[JIT\_Unbox(..)](https://github.com/dotnet/coreclr/blob/03bec77fb4efaa397248a2b9a35c547522221447/src/vm/jithelpers.cpp#L3603-L3626)*, which is a wrapper around *[JIT\_Unbox\_Helper(..)](https://github.com/dotnet/coreclr/blob/03bec77fb4efaa397248a2b9a35c547522221447/src/vm/jithelpers.cpp#L3574-L3600)*.
 
-Also, it is interesting that
-(https://stackoverflow.com/questions/3743762/unboxing-does-not-create-a-copy-of-the-value-is-this-right),
-unboxing doesn’t mean copying data to the heap. Boxing means passing a
-pointer to the heap while testing the compatibility of types. The IL
-opcode following unboxing will define the actions with this address. The
-data might be copied to a local variable or the stack for calling a
-method. Otherwise, we would have a double copying; first when copying
-from the heap to somewhere, and then copying to the destination place.
+Also, it is interesting that (https://stackoverflow.com/questions/3743762/unboxing-does-not-create-a-copy-of-the-value-is-this-right), unboxing doesn’t mean copying data to the heap. Boxing means passing a pointer to the heap while testing the compatibility of types. The IL opcode following unboxing will define the actions with this address. The data might be copied to a local variable or the stack for calling a method. Otherwise, we would have a double copying; first when copying from the heap to somewhere, and then copying to the destination place.
 
 ### The ref keyword
 
@@ -908,13 +822,9 @@ from the heap to somewhere, and then copying to the destination place.
 
 If we talk to any Java developer, we will know two things:
 
-– All value types in Java are boxed, meaning they are not essentially
-value types. Integers are also boxed. – For the reason of optimization
-all integers from -128 to 127 are taken from the pool of objects.
+– All value types in Java are boxed, meaning they are not essentially value types. Integers are also boxed. – For the reason of optimization all integers from -128 to 127 are taken from the pool of objects.
 
-So, why this doesn’t happen in .NET CLR during boxing? It is simple.
-Because we can change the content of a boxed value type, that is we can
-do the following:
+So, why this doesn’t happen in .NET CLR during boxing? It is simple. Because we can change the content of a boxed value type, that is we can do the following:
 
 ```csharp
 object x = 1;
@@ -971,9 +881,7 @@ public struct Char : IComparable, IConvertible
 }
 ```
 
-All CLR primitive types are designed this way. We, mere mortals, cannot
-implement this behavior. Moreover, we don't need this: it is done to
-give primitive types a spirit of OOP in CLR.
+All CLR primitive types are designed this way. We, mere mortals, cannot implement this behavior. Moreover, we don't need this: it is done to give primitive types a spirit of OOP in CLR.
 
 ## References
 
