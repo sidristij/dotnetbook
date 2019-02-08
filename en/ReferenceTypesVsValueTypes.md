@@ -38,8 +38,7 @@ object obj2 = obj;            // Here, we copy a reference to this object. Final
                               // we have one object and two references.
 ```
 
-It seems this property produces ambiguous code constructs such as the
-change of code in collections:
+It seems this property produces ambiguous code constructs such as the change of code in collections:
 
 ```csharp
 // Let’s declare a structure
@@ -101,8 +100,7 @@ list[0] = copy;
 Console.WriteLine(list[0].Data);
 ```
 
-This code is correct despite its apparent redundancy. The program will
-output `4` to a console.
+This code is correct despite its apparent redundancy. The program will output `4` to a console.
 
 The next example shows what I mean by “the value of a structure is an
 entire structure”
@@ -777,7 +775,7 @@ Also, it is interesting that (https://stackoverflow.com/questions/3743762/unboxi
 
 ## Questions
 
-## Why .NET CLR can’t do pooling for boxing itself?
+### Why .NET CLR can’t do pooling for boxing itself?
 
 If we talk to any Java developer, we will know two things:
 
@@ -806,11 +804,11 @@ If we dealt with pooling, then we would change all ones in application to 138, w
 
 The next is the essence of value types in .NET. They deal with value, meaning they work faster. Boxing is rare and addition of boxed numbers belongs to the world of fantasy and bad architecture. This is not useful at all.
 
-## Why it is not possible to do boxing on stack instead of the heap, when you call a method that takes an object type, which is a value type in fact?
+### Why it is not possible to do boxing on stack instead of the heap, when you call a method that takes an object type, which is a value type in fact?
 
 If the value type boxing is done on the stack and the reference will go to the heap, the reference inside the method can go somewhere else, for example a method can put the reference in the field of a class. The method will then stop, and the method that made boxing will also stop. As a result, the reference will point to a dead space on the stack.
 
-## Why it is not possible to use Value Type as a field?
+### Why it is not possible to use Value Type as a field?
 
 Sometimes we want to use a structure as a field of another structure which uses the first one. Or simpler: use structure as a structure field. Don't ask me why this can be useful. It cannot. If you use a structure as its field or through dependence with another structure, you create recursion, which means infinite size structure. However, .NET Framework has some places where you can do it. An example is `System.Char`, [which contains itself](http://referencesource.microsoft.com/#mscorlib/system/char.cs,02f2b1a33b09362d):
 
