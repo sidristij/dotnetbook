@@ -35,10 +35,10 @@
           2. Isolation
           3. Security model
       2. Exceptional situations
-          1. [Introduction to exceptional situations](./ru/ExceptionalFlow/1-Exceptions-Intro.md)
-          2. [Architecture](./ru/ExceptionalFlow/2-Exceptions-Architecture.md)
-          3. [Exceptions events](./ru/ExceptionalFlow/3-Exceptions-Events.md)
-          4. [Types of exceptional situations](./ru/ExceptionalFlow/4-Exceptions-Types.md)
+          1. Introduction to exceptional situations
+          2. Architecture
+          3. Exceptions events
+          4. Types of exceptional situations
 
 # Содержание
 
