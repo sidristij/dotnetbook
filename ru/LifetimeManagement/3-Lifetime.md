@@ -38,7 +38,7 @@
 
 Рассмотрим самый базовый вариант интерфейса типа:
 
-``` csharp
+```csharp
 public class Lifetime
 {
     public static Lifetime Eternal = Define("Eternal").Lifetime;
@@ -50,3 +50,49 @@ public class Lifetime
 ```
 
 Что мы здесь видим? Есть новая сущность, `Lifetime`. Сущность эта имеет свойство `IsTerminated`, которое призвано помочь в понимании, закончилось ли время жизни Lifetime и всех, кто от него зависит или еще нет. Задать список действий, которые должны произойти в случае смерти экземпляра типа `Lifetime` можно путем их добавления во внутренний список методом `Add`.
+
+Также давайте рассмотрим второй краеугольный камень этого шаблона: класс `LifetimeDef`, который владеет правом на останов срока жизни экземпляра `Lifetime`, которым владеет.
+
+```csharp
+public class LifetimeDef : IDisposable
+{
+    public Lifetime Lifetime { get; }
+    public string Name { get; }
+
+    private const string Noname = "Unnamed";
+
+    public LifetimeDef(string name = null)
+    {
+        Name = name ?? Noname;
+        Lifetime = new Lifetime();
+    }
+
+    public void Terminate()
+    {
+        Lifetime.Terminate();
+    }
+
+    public void Dispose()
+    {
+        Terminate();
+    }
+}
+```
+
+Для удобности он содержит необязательное поле `Name`. Это введено чтобы при отладке множественные экземпляры типа `LifetimeDef` не вводили бы в заблужение и позволяли бы легко находить необходимые сущности. Метод `Terminate` обрывает жизнь экземпляру класса Lifetime, а реализация шаблона `IDisposable` позволяет использовать `LifetimeDef` в классических сценариях. Например, в блоке `using`:
+
+```csharp
+[Test]
+void EntityTest()
+{
+    Entity entity;
+    using(var ldf = Lifetime.Define())
+    {
+        entity = new Entity(lfd.Lifetime);
+        entity.OpenConnection();
+        //...
+    }
+
+    Assert.Equal(State.Closed, entity.ConnectionState)
+}
+```
