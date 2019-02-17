@@ -96,3 +96,7 @@ void EntityTest()
     Assert.Equal(State.Closed, entity.ConnectionState)
 }
 ```
+
+## Сценарии использования
+
+Для того чтобы разобраться, с чем мы имеем дело, я предлагаю рассмотреть ряд примеров. 
