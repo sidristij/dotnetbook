@@ -1,4 +1,5 @@
-﻿# Шаблон Disposable (Disposable Design Principle)
+﻿![](./imgs/Disposable-Cover.png)
+# Шаблон Disposable (Disposable Design Principle)
 
 > [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/54)
 

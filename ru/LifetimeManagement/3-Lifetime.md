@@ -100,3 +100,20 @@ void EntityTest()
 ## Сценарии использования
 
 Для того чтобы разобраться, с чем мы имеем дело, я предлагаю рассмотреть ряд примеров. 
+
+### Пример 1
+
+```csharp
+
+public class Subscriber
+{
+    public Subscriber(DataSource dataSource, Lifetime lft)
+    {
+        dataSource.DataArrived.Add(this.OnDataArrived);
+        lft.Add(() => dataSource.DataArrived.Remove(this.OnDataArrived));
+    }
+
+    // Other methods
+}
+
+```
