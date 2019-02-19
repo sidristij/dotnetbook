@@ -1,3 +1,5 @@
+![](./imgs/Disposable-Cover.png)
+
 # Disposable pattern (Disposable Design Principle)
 
  > [A link to the discussion] (https://github.com/sidristij/dotnetbook/issues/54)
