@@ -1,8 +1,8 @@
-![](./imgs/Disposable-Cover.png)
+![IDisposable cover](./imgs/Disposable-Cover.png)
 
 # Disposable pattern (Disposable Design Principle)
 
- > [A link to the discussion] (https://github.com/sidristij/dotnetbook/issues/54)
+> [A link to the discussion](https://github.com/sidristij/dotnetbook/issues/54)
 
 I guess almost any programmer who uses .NET will now say this pattern is a piece of cake. That it is the best-known pattern used on the platform. However, even the simplest and well-known problem domain will have secret areas which you have never looked at. So, let’s describe the whole thing from the beginning for the first-timers and all the rest (so that each of you could remember the basics). Don’t skip these paragraphs — I am watching you!
 
@@ -19,8 +19,7 @@ public interface IDisposable
 
 What is the purpose of the interface? I mean, why do we need to clear up memory at all if we have a smart Garbage Collector that clears the memory instead of us, so we even don’t have to think about it. However, there are some small details.
 
-There is a misconception that ```IDisposable``` serves to release unmanaged resources. This is only partially true and to understand it, you just need to remember the examples of unmanaged resources. 
-Is ```File``` class an unmanaged resource? No. Maybe ```DbContext``` is an unmanaged resource? No, again. An unmanaged resource is something that doesn’t belong to .NET type system. Something the platform didn’t create, something that exists out of its scope. A simple example is an opened file handle in an operating system. A handle is a number that uniquely identifies a file opened – no, not by you – by an operating system. That is, all control structures (e.g. the position of a file in a file system, file fragments in case of fragmentation and other service information, the numbers of a cylinder, a head or a sector of an HDD) are inside an OS but not .NET platform. The only unmanaged resource that is passed to .NET platform is IntPtr number. This number is wrapped by FileSafeHandle, which is in its turn wrapped by the File class. It means the File class is not an unmanaged resource on its own, but uses an additional layer in the form of IntPtr to include an unmanaged resource — the handle of an opened file. How do you read that file? Using a set of methods in WinAPI or Linux OS.
+There is a misconception that ```IDisposable``` serves to release unmanaged resources. This is only partially true and to understand it, you just need to remember the examples of unmanaged resources. Is ```File``` class an unmanaged resource? No. Maybe ```DbContext``` is an unmanaged resource? No, again. An unmanaged resource is something that doesn’t belong to .NET type system. Something the platform didn’t create, something that exists out of its scope. A simple example is an opened file handle in an operating system. A handle is a number that uniquely identifies a file opened – no, not by you – by an operating system. That is, all control structures (e.g. the position of a file in a file system, file fragments in case of fragmentation and other service information, the numbers of a cylinder, a head or a sector of an HDD) are inside an OS but not .NET platform. The only unmanaged resource that is passed to .NET platform is IntPtr number. This number is wrapped by FileSafeHandle, which is in its turn wrapped by the File class. It means the File class is not an unmanaged resource on its own, but uses an additional layer in the form of IntPtr to include an unmanaged resource — the handle of an opened file. How do you read that file? Using a set of methods in WinAPI or Linux OS.
 
 Synchronization primitives in multithreaded or multiprocessor programs are the second example of unmanaged resources. Here belong data arrays that are passed through P/Invoke and also mutexes or semaphores.
 
@@ -110,8 +109,8 @@ What is the difference in the behavior of the last two examples? The first one d
 
 Let’s say straight away why this may go wrong:
 
-  – If we use ```using(obj) { ... }```, an exception may appear in an inner block of code. This exception is caught by ```finally``` block, which we cannot see (this is syntactic sugar of C#). This block calls Dispose implicitly. However, there are cases when this doesn’t happen. For example, neither ```catch``` nor ```finally``` catch ```StackOverflowException```. You should always remember this. Because if some thread becomes recursive and ```StackOverflowException``` occurs at some point, .NET will forget about the resources that it used but not released. It doesn’t know how to release unmanaged resources. They will stay in memory until OS releases them, i.e. when you exit a program, or even some time after the termination of an application.
-  – If we call Dispose() from another Dispose(). Again, we may happen to fail to get to it. This is not the case of an absent-minded app developer, who forgot to call Dispose(). It is the question of exceptions. However, these are not only the exceptions that crash a thread of an application. Here we talk about all exceptions that will prevent an algorithm from calling an external Dispose() that will call our Dispose().
+  - If we use ```using(obj) { ... }```, an exception may appear in an inner block of code. This exception is caught by ```finally``` block, which we cannot see (this is syntactic sugar of C#). This block calls Dispose implicitly. However, there are cases when this doesn’t happen. For example, neither ```catch``` nor ```finally``` catch ```StackOverflowException```. You should always remember this. Because if some thread becomes recursive and ```StackOverflowException``` occurs at some point, .NET will forget about the resources that it used but not released. It doesn’t know how to release unmanaged resources. They will stay in memory until OS releases them, i.e. when you exit a program, or even some time after the termination of an application.
+  - If we call Dispose() from another Dispose(). Again, we may happen to fail to get to it. This is not the case of an absent-minded app developer, who forgot to call Dispose(). It is the question of exceptions. However, these are not only the exceptions that crash a thread of an application. Here we talk about all exceptions that will prevent an algorithm from calling an external Dispose() that will call our Dispose().
 
 All these cases will create suspended unmanaged resources. That is because Garbage Collector doesn’t know it should collect them. All it can do upon next check is to discover that the last reference to an object graph with our ```FileWrapper``` type is lost. In this case, the memory will be reallocated for objects with references. How can we prevent it?
 
@@ -193,43 +192,35 @@ public class FileWrapper : IDisposable
     /// other methods
 }
 ```
-"
-Now our example of a type that encapsulates an unmanaged resource looks complete. Unfortunately, the second ```Dispose()``` is in fact a standard of the platform and we allow to call it.
-Note that people often allow the second call of ```Dispose()``` to avoid problems with a calling code and this is wrong. However, a user of your library who looks at MS documentation may not think so and will allow multiple calls of Dispose().
-Calling other public methods will destroy the integrity of an object anyway. If we destroyed the object, we cannot work with it anymore. This means we must call ```CheckDisposed``` at the beginning of each public method. 
-However, this code contains a severe problem that prevents it from working as we intended. If we remember how garbage collection works, we will notice one feature.  
-When collecting garbage, GC *primarily* finalizes everything inherited directly from *Object*. Next it deals with objects that implement *CriticalFinalizerObject*. This becomes a problem as both classes that we designed inherit Object. We don’t know in which order they will come to the “last mile”. 
-However, a higher-level object can use its finalizer to finalize an object with an unmanaged resource. Although, this doesn’t sound like a great idea. The order of finalization would be very helpful here. To set it, the lower-level type with an encapsulated unmanaged resource must be inherited from `CriticalFinalizerObject`.
-The second reason is more profound. Imagine that you dared to write an application that doesn’t take much care of memory. It allocates memory in huge quantities, without cashing and other subtleties. 
-One day this application will crash with OutOfMemoryException. When it occurs, code runs specifically. It cannot allocate anything, since it will lead to a repeated exception, even if the first one is caught.
-This doesn’t mean we shouldn’t create new instances of objects. Even a simple method call can throw this exception, e.g. that of finalization.
-I remind you that methods are compiled when you call them for the first time. This is usual behavior. How can we prevent this problem? Quite easily.
-If your object is inherited from *CriticalFinalizerObject*, then *all* methods of this type will be compiled straight away upon loading it in memory. Moreover, if you mark methods with *[PrePrepareMethod]* attribute, they will be also pre-compiled and will be secure to call in a low resource situation. 
-Why is that important? Why spend too much effort on those that pass away? Because unmanaged resources can be suspended in a system for long.
-Even after you restart a computer. If a user opens a file from a file share in your application, the former will be locked by a remote host and released on the timeout or when you release a resource by closing the file.
-If your application crashes when the file is opened, it won't be released even after reboot. You will have to wait long until the remote host releases it. 
-Also, you shouldn’t allow exceptions in finalizers. This leads to an accelerated crash of the CLR and of an application as you cannot wrap the call of a finalizer in *try .. catch*. I mean, when you try to release a resource, you must be sure it can be released.
-The last but not less important fact: if the CLR unloads a domain abnormally, the finalizers of types, derived from *CriticalFinalizerObject* will be also called, unlike those inherited directly from *Object*. 
+
+Now our example of a type that encapsulates an unmanaged resource looks complete. Unfortunately, the second ```Dispose()``` is in fact a standard of the platform and we allow to call it. Note that people often allow the second call of ```Dispose()``` to avoid problems with a calling code and this is wrong. However, a user of your library who looks at MS documentation may not think so and will allow multiple calls of Dispose(). Calling other public methods will destroy the integrity of an object anyway. If we destroyed the object, we cannot work with it anymore. This means we must call ```CheckDisposed``` at the beginning of each public method.
+
+However, this code contains a severe problem that prevents it from working as we intended. If we remember how garbage collection works, we will notice one feature. When collecting garbage, GC *primarily* finalizes everything inherited directly from *Object*. Next it deals with objects that implement *CriticalFinalizerObject*. This becomes a problem as both classes that we designed inherit Object. We don’t know in which order they will come to the “last mile”. However, a higher-level object can use its finalizer to finalize an object with an unmanaged resource. Although, this doesn’t sound like a great idea. The order of finalization would be very helpful here. To set it, the lower-level type with an encapsulated unmanaged resource must be inherited from `CriticalFinalizerObject`.
+
+The second reason is more profound. Imagine that you dared to write an application that doesn’t take much care of memory. It allocates memory in huge quantities, without cashing and other subtleties. One day this application will crash with OutOfMemoryException. When it occurs, code runs specifically. It cannot allocate anything, since it will lead to a repeated exception, even if the first one is caught. This doesn’t mean we shouldn’t create new instances of objects. Even a simple method call can throw this exception, e.g. that of finalization. I remind you that methods are compiled when you call them for the first time. This is usual behavior. How can we prevent this problem? Quite easily. If your object is inherited from *CriticalFinalizerObject*, then *all* methods of this type will be compiled straight away upon loading it in memory. Moreover, if you mark methods with *[PrePrepareMethod]* attribute, they will be also pre-compiled and will be secure to call in a low resource situation.
+
+Why is that important? Why spend too much effort on those that pass away? Because unmanaged resources can be suspended in a system for long. Even after you restart a computer. If a user opens a file from a file share in your application, the former will be locked by a remote host and released on the timeout or when you release a resource by closing the file. If your application crashes when the file is opened, it won't be released even after reboot. You will have to wait long until the remote host releases it. Also, you shouldn’t allow exceptions in finalizers. This leads to an accelerated crash of the CLR and of an application as you cannot wrap the call of a finalizer in *try .. catch*. I mean, when you try to release a resource, you must be sure it can be released. The last but not less important fact: if the CLR unloads a domain abnormally, the finalizers of types, derived from *CriticalFinalizerObject* will be also called, unlike those inherited directly from *Object*.
+
 ## SafeHandle / CriticalHandle / SafeBuffer / derived types
+
 I feel I’m going to open the Pandora’s box for you. Let’s talk about special types: SafeHandle, CriticalHandle and their derived types. 
 This is the last thing about the pattern of a type that gives access to an unmanaged resource. But first, let’s list everything we _usually_ get from unmanaged world:
-–The first and obvious thing is handles. This may be an meaningless word for a .NET developer, but it is a very important component of the operating system world.
-A handle is a 32- or 64-bit number by nature. It designates an opened session of interaction with an operating system.   For example, when you open a file you get a handle from the WinApi function. Then you can work with it and do *Seek*, *Read* or *Write* operations. 
-Or, you may open a socket for network access. Again an operating system will pass you a handle. In .NET handles are stored as *IntPtr* type; 
-–The second thing is data arrays. You can work with unmanaged arrays either through unsafe code (unsafe is a key word here) or use SafeBuffer which will wrap a data buffer into a suitable .NET class.   
-Note that the first way is faster (e.g. you can optimize loops greatly), but the second one is much safer, as it is based on SafeHandle; 
-–Then go strings.
-Strings are simple as we need to determine the format and encoding of the string we capture. It is then copied for us (a string is an immutable class) and we don’t worry about it anymore.
-–The last thing is ValueTypes that are just copied so we don’t need to think about them at all.
-SafeHandle is a special .NET CLR class that inherits CriticalFinalizerObject and should wrap the handles of an operating system in the safest and most comfortable way. 
-"```csharp
 
+  - The first and obvious thing is handles. This may be an meaningless word for a .NET developer, but it is a very important component of the operating system world. A handle is a 32- or 64-bit number by nature. It designates an opened session of interaction with an operating system.   For example, when you open a file you get a handle from the WinApi function. Then you can work with it and do *Seek*, *Read* or *Write* operations. Or, you may open a socket for network access. Again an operating system will pass you a handle. In .NET handles are stored as *IntPtr* type;
+  - The second thing is data arrays. You can work with unmanaged arrays either through unsafe code (unsafe is a key word here) or use SafeBuffer which will wrap a data buffer into a suitable .NET class. Note that the first way is faster (e.g. you can optimize loops greatly), but the second one is much safer, as it is based on SafeHandle;
+  - Then go strings. Strings are simple as we need to determine the format and encoding of the string we capture. It is then copied for us (a string is an immutable class) and we don’t worry about it anymore.
+  - The last thing is ValueTypes that are just copied so we don’t need to think about them at all.
+
+SafeHandle is a special .NET CLR class that inherits CriticalFinalizerObject and should wrap the handles of an operating system in the safest and most comfortable way.
+
+```csharp
 [SecurityCritical, SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
 {
     protected IntPtr handle;        // The handle from OS
-    private int _state;                  // State (validity, the reference counter)
-    private bool _ownsHandle;  // The flag for the possibility to release the handle. It may happen that we wrap somebody else’s handle that we have no right to release.
+    private int _state;             // State (validity, the reference counter)
+    private bool _ownsHandle;       // The flag for the possibility to release the handle. 
+                                    // It may happen that we wrap somebody else’s handle that we have no right to release.
     private bool _fullyInitialized; // The initialized instance
 
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -250,20 +241,18 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     {
         this.handle = handle;
     }
-"
-"// This method is necessary to work with IntPtr directly. It is used to  
-// determine if a handle was created by comparing it with one of the previously 
-// determined known values. "
-"Pay attention that this method is dangerous because:
-// –if a handle is marked as invalid by SetHandleasInvalid, DangerousGetHandle   
-// it will anyway return the original value of the handle."
-"// –you can reuse the returned handle at any place. This can at least
-// mean, that it will stop work without a feedback. "
-"In the worst case if
-// IntPtr is passed directly to another place, it can go to an unsafe code and become a vector for application attack
-// by resource substitution in one IntPtr
-"
-"[ResourceExposure(ResourceScope.None), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+
+    // This method is necessary to work with IntPtr directly. It is used to  
+    // determine if a handle was created by comparing it with one of the previously
+    // determined known values. Pay attention that this method is dangerous because:
+    //
+    //   – if a handle is marked as invalid by SetHandleasInvalid, DangerousGetHandle
+    //     it will anyway return the original value of the handle.
+    //   – you can reuse the returned handle at any place. This can at least
+    //     mean, that it will stop work without a feedback. In the worst case if
+    //     IntPtr is passed directly to another place, it can go to an unsafe code and become
+    //     a vector for application attack by resource substitution in one IntPtr
+    [ResourceExposure(ResourceScope.None), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public IntPtr DangerousGetHandle()
     {
         return handle;
@@ -298,47 +287,38 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     {
         // ...
     }
-"
-"// You should call this method every time when you understand that a handle is not operational anymore.
-// If you don’t do it, you can get a leak.
-"
-"[SecurityCritical, ResourceExposure(ResourceScope.None)]
+
+    // You should call this method every time when you understand that a handle is not operational anymore.
+    // If you don’t do it, you can get a leak.
+    [SecurityCritical, ResourceExposure(ResourceScope.None)]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void SetHandleAsInvalid();
-"
-"// Override this method to point how to release
-// the resource.
-"
-"You should code carefully, as you cannot
-// call uncompiled methods, create new objects or produce exceptions from it.
-"
-"// A returned value shows if the resource was releases successfully.     
-// If a returned value = false, 
-"
-"// SafeHandleCriticalFailure will occur
-// that will enter a breakpoint if SafeHandleCriticalFailure 
-// Managed Debugger Assistant is activated.
+
+    // Override this method to point how to release
+    // the resource. You should code carefully, as you cannot
+    // call uncompiled methods, create new objects or produce exceptions from it.
+    // A returned value shows if the resource was releases successfully.
+    // If a returned value = false, SafeHandleCriticalFailure will occur
+    // that will enter a breakpoint if SafeHandleCriticalFailure
+    // Managed Debugger Assistant is activated.
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-    protected abstract bool ReleaseHandle();"
-"// Working with the reference counter. To be explained further.
+    protected abstract bool ReleaseHandle();
+
+    // Working with the reference counter. To be explained further.
     [SecurityCritical, ResourceExposure(ResourceScope.None)]
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousAddRef(ref bool success);
     public extern void DangerousRelease();
 }
-```"
-To understand the usefulness of the classes derived from SafeHandle you need to remember why .NET types are so great: GC can collect their instances automatically. As SafeHandle is managed, the unmanaged resource it wrapped inherits all characteristics of the managed world.
-It also contains an internal counter of external references which are unavailable to CLR. I mean references from unsafe code. 
-You don’t need to increment or decrement a counter manually at all. When you declare a type derived from SafeHandle as a parameter of an unsafe method, the counter increments when entering that method or decrements after exiting. 
-The reason is that when you go to an unsafe code by passing a handle there, you may get this SafeHandle collected by GC, by resetting the reference to this handle in another thread (if you deal with one handle from several threads).
-Things work even easier with a reference counter: SafeHandle will not be created until the counter is zeroed. That’s why you don’t need to change the counter manually. Or, you should do it very carefully by returning it when possible.
-The second purpose of a reference counter is to set the order of finalization of ```CriticalFinalizerObject``` that reference each other.
-If one SafeHandle-based type references another, then you need to additionally increment a reference counter in the constructor of the referencing type and decrease the counter in the ReleaseHandle method.
-"Thus, your object will exist until the object to which your object references is not destroyed. However, it's better to avoid such puzzlements. Let’s use the knowledge about SafeHandlers and write the final variant of our class:
-"
-"```csharp
+```
+
+To understand the usefulness of the classes derived from SafeHandle you need to remember why .NET types are so great: GC can collect their instances automatically. As SafeHandle is managed, the unmanaged resource it wrapped inherits all characteristics of the managed world. It also contains an internal counter of external references which are unavailable to CLR. I mean references from unsafe code.  You don’t need to increment or decrement a counter manually at all. When you declare a type derived from SafeHandle as a parameter of an unsafe method, the counter increments when entering that method or decrements after exiting.  The reason is that when you go to an unsafe code by passing a handle there, you may get this SafeHandle collected by GC, by resetting the reference to this handle in another thread (if you deal with one handle from several threads). Things work even easier with a reference counter: SafeHandle will not be created until the counter is zeroed. That’s why you don’t need to change the counter manually. Or, you should do it very carefully by returning it when possible.
+
+The second purpose of a reference counter is to set the order of finalization of ```CriticalFinalizerObject``` that reference each other. If one SafeHandle-based type references another, then you need to additionally increment a reference counter in the constructor of the referencing type and decrease the counter in the ReleaseHandle method. Thus, your object will exist until the object to which your object references is not destroyed. However, it's better to avoid such puzzlements. Let’s use the knowledge about SafeHandlers and write the final variant of our class:
+
+```csharp
 public class FileWrapper : IDisposable
 {
     SafeFileHandle _handle;
@@ -355,7 +335,6 @@ public class FileWrapper : IDisposable
         _disposed = true;
         _handle.Dispose();
     }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckDisposed()
@@ -375,37 +354,39 @@ public class FileWrapper : IDisposable
     /// other methods
 }
 ```
-"
-How is it different? If you set **any** SafeHandle-based type (including your own) as the return value in the DllImport method, then Marshal will correctly create and initialize this type and set a counter to 1. Knowing this we set the SafeFileHandle type as a return type for the CreateFile kernel function. 
-When we get it, we will use it exactly to call ReadFile and WriteFile (as a counter value increments when calling and decrements when exiting it will ensure that the handle still exist throughout reading from and writing to a file).
-This is a correctly designed type and it will reliably close a file handle if a thread is aborted. This means we don’t need to implement our own finalizer and everything connected with it. The whole type is simplified.
-### The execution of a finalizer when instance methods work
-There is one optimization technique used during garbage collection that is designed to collect more objects in less time.  Let’s look at the following code:
-"```csharp
 
+How is it different? If you set **any** SafeHandle-based type (including your own) as the return value in the DllImport method, then Marshal will correctly create and initialize this type and set a counter to 1. Knowing this we set the SafeFileHandle type as a return type for the CreateFile kernel function. When we get it, we will use it exactly to call ReadFile and WriteFile (as a counter value increments when calling and decrements when exiting it will ensure that the handle still exist throughout reading from and writing to a file). This is a correctly designed type and it will reliably close a file handle if a thread is aborted. This means we don’t need to implement our own finalizer and everything connected with it. The whole type is simplified.
+
+### The execution of a finalizer when instance methods work
+
+There is one optimization technique used during garbage collection that is designed to collect more objects in less time.  Let’s look at the following code:
+
+```csharp
 public void SampleMethod()
 {
     var obj = new object();
     obj.ToString();
-    
+
     // ...
 
-"
-"    // If GC runs at this point, it may collect obj 
+
+    // If GC runs at this point, it may collect obj
     // as it is not used anymore
     // ...
-    
+
     Console.ReadLine();
 }
-```"
+```
+
 On the one hand, the code looks safe, and it’s not clear straightaway why should we care.
-However, if you remember that there are classes that wrap unmanaged resources, you will understand that an incorrectly designed class may cause an exception from the unmanaged world. This exception will report that a previously obtained handle is not active: 
-"```csharp
-// The example of an absolutely incorrect implementation 
+However, if you remember that there are classes that wrap unmanaged resources, you will understand that an incorrectly designed class may cause an exception from the unmanaged world. This exception will report that a previously obtained handle is not active:
+
+```csharp
+// The example of an absolutely incorrect implementation
 void Main()
 {
     var inst = new SampleClass();
-    inst.ReadData(); 
+    inst.ReadData();
     // inst is not used further
 }
 
@@ -436,9 +417,9 @@ public sealed class SampleClass : CriticalFinalizerObject, IDisposable
     public unsafe void ReadData()
     {
         Console.WriteLine(""Calling GC.Collect..."");
-        
+
         // I redirected it to the local variable not to
-        // use this after GC.Collect(); 
+        // use this after GC.Collect();
         var handle = _handle;
 
         // The imitation of full GC.Collect
@@ -463,19 +444,16 @@ public sealed class SampleClass : CriticalFinalizerObject, IDisposable
 
     [DllImport(""kernel32.dll"", SetLastError = true)]
     static extern bool CloseHandle(IntPtr hObject);
-}    
+}
 ```
-"
-Admit that this code looks decent more or less. Anyway, it doesn’t look like there is a problem. In fact, there is a serious problem.  
-A class finalizer may attempt to close a file while reading it, which almost inevitably leads to an error. 
-Because in this case the error is explicitly returned (`IntPtr == -1`) we will not see this. The `_handle` will be set to zero, the following `Dispose` will fail to close the file and the resource will leak.
-To solve this problem, you should use `SafeHandle`, `CriticalHandle`, `SafeBuffer` and their derived classes. Besides that these classes have counters of usage in unmanaged code, these counters also automatically increment when passing with methods' parameters to the unmanaged world and decrement when leaving it.
+
+Admit that this code looks decent more or less. Anyway, it doesn’t look like there is a problem. In fact, there is a serious problem. A class finalizer may attempt to close a file while reading it, which almost inevitably leads to an error. Because in this case the error is explicitly returned (`IntPtr == -1`) we will not see this. The `_handle` will be set to zero, the following `Dispose` will fail to close the file and the resource will leak. To solve this problem, you should use `SafeHandle`, `CriticalHandle`, `SafeBuffer` and their derived classes. Besides that these classes have counters of usage in unmanaged code, these counters also automatically increment when passing with methods' parameters to the unmanaged world and decrement when leaving it.
+
 ## Multithreading
-Now let’s talk about thin ice. In the previous sections about IDisposable we touched one very important concept that underlies not only the design principles of Disposable types but any type in general. This is the object’s integrity concept. 
-It means that at any given moment of time an object is in a strictly determined state and any action with this object turns its state into one of the variants that were pre-determined while designing a type of this object. 
-In other words, no action with the object should turn it into an undefined state. This results in a problem with the types designed in the above examples. They are not thread-safe. 
-There is a chance the public methods of these types will be called when the destruction of an object is in progress. Let’s solve this problem and decide whether we should solve it at all.
-"```csharp
+
+Now let’s talk about thin ice. In the previous sections about IDisposable we touched one very important concept that underlies not only the design principles of Disposable types but any type in general. This is the object’s integrity concept. It means that at any given moment of time an object is in a strictly determined state and any action with this object turns its state into one of the variants that were pre-determined while designing a type of this object. In other words, no action with the object should turn it into an undefined state. This results in a problem with the types designed in the above examples. They are not thread-safe. There is a chance the public methods of these types will be called when the destruction of an object is in progress. Let’s solve this problem and decide whether we should solve it at all.
+
+```csharp
 public class FileWrapper : IDisposable
 {
     IntPtr _handle;
@@ -531,18 +509,17 @@ public class FileWrapper : IDisposable
 
     /// other methods
 }
-```"
-The ```_disposed``` validation code in Dispose() should be initialized as a critical section. In fact, the whole code of public methods should be initialized as a critical section. This will solve the problem of concurrent access to a public method of an instance type and to a method of its destruction. However, it brings other problems that become a timebomb: 
-–The intensive use of type instance methods as well as the creation and destruction of objects will lower the performance significantly. This is because taking a lock consumes time. 
-This time is necessary to allocate SyncBlockIndex tables, check current thread and many other things (we will deal with them in the chapter about multithreading). That means we will have to sacrifice the object’s performance throughout its lifetime for the “last mile” of its life. 
-"– Additional memory traffic for synchronization objects.
-– Additional steps GC should take to go through an object graph.
-"
-Now, let’s name the second and, in my opinion, the most important thing. We allow the destruction of an object and at the same time expect to work with it again. What do we hope for in this situation? that it will fail? 
-Because if Dispose runs first, then the following use of object methods will definitely result in ```ObjectDisposedException```. So, you should delegate the synchronization between Dispose() calls and other public methods of a type to the service side, i.e. to the code that created the instance of ```FileWrapper``` class.  
-It is because only the creating side knows what it will do with an instance of a class and when to destroy it. On the other hand, a Dispose call should produce only critical errors, such as `OutOfMemoryException`, but not IOException for example. This is because of the requirements for the architecture of classes that implement IDisposable.
-It means that if Dispose is called from more than one thread at a time, the destruction of an entity may happen from two threads simultaneously (we skip the check of `if(_disposed) return;`). It depends on the situation: if a resource *can be* released several times, there is no need in additional checks. Otherwise, protection is necessary:
-"```csharp
+```
+
+The ```_disposed``` validation code in Dispose() should be initialized as a critical section. In fact, the whole code of public methods should be initialized as a critical section. This will solve the problem of concurrent access to a public method of an instance type and to a method of its destruction. However, it brings other problems that become a timebomb:
+
+  - The intensive use of type instance methods as well as the creation and destruction of objects will lower the performance significantly. This is because taking a lock consumes time. This time is necessary to allocate SyncBlockIndex tables, check current thread and many other things (we will deal with them in the chapter about multithreading). That means we will have to sacrifice the object’s performance throughout its lifetime for the “last mile” of its life.
+  - Additional memory traffic for synchronization objects.
+  - Additional steps GC should take to go through an object graph.
+
+Now, let’s name the second and, in my opinion, the most important thing. We allow the destruction of an object and at the same time expect to work with it again. What do we hope for in this situation? that it will fail? Because if Dispose runs first, then the following use of object methods will definitely result in ```ObjectDisposedException```. So, you should delegate the synchronization between Dispose() calls and other public methods of a type to the service side, i.e. to the code that created the instance of ```FileWrapper``` class. It is because only the creating side knows what it will do with an instance of a class and when to destroy it. On the other hand, a Dispose call should produce only critical errors, such as `OutOfMemoryException`, but not IOException for example. This is because of the requirements for the architecture of classes that implement IDisposable. It means that if Dispose is called from more than one thread at a time, the destruction of an entity may happen from two threads simultaneously (we skip the check of `if(_disposed) return;`). It depends on the situation: if a resource *can be* released several times, there is no need in additional checks. Otherwise, protection is necessary:
+
+```csharp
 // I don’t show the whole pattern on purpose as the example will be too long
 // and will not show the essence
 class Disposable : IDisposable
