@@ -30,7 +30,7 @@
           1. Mark & Sweep
           2. Optimizations
           3. Finalization
-          4. [IDisposable: Disposable Design Principle](./en/LifetimeManagenent/2-Disposable.md)
+          4. [IDisposable: Disposable Design Principle](./en/LifetimeManagement/2-Disposable.md)
   4. Commands flow
       1. Application Domains
           1. Introduction
@@ -65,8 +65,8 @@
           2. Оптимизация поколений
           3. Финализация
           4. Проблемы, связанные с GC и финализацией
-          5. [Шаблон Disposable (Disposable Design Principle)](./ru/LifetimeManagenent/2-Disposable.md)
-          5. [Шаблон Lifetime](./ru/LifetimeManagenent/3-Lifetime.md)
+          5. [Шаблон Disposable (Disposable Design Principle)](./ru/LifetimeManagement/2-Disposable.md)
+          5. [Шаблон Lifetime](./ru/LifetimeManagement/3-Lifetime.md)
   4. Поток исполнения команд
       1. Домены приложений
           1. [Введение в домены приложений](./ru/AppDomains/1-AppDomains-Intro.md)
