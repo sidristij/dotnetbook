@@ -12,7 +12,7 @@
 
   1. Common Language Runtime
   2. Memory management basics: user layer
- 1. [Heap basics](./ru/MemoryManagementBasics.md)
+ 1. Heap basics
       1. Thread stack
       2. [RefTypes, ValueTypes, Boxing & Unboxing](./en/ReferenceTypesVsValueTypes.md)
       3. Memory, Span
@@ -30,7 +30,7 @@
           1. Mark & Sweep
           2. Optimizations
           3. Finalization
-          4. IDisposable: Disposable Design Principle
+          4. [IDisposable: Disposable Design Principle](./en/Disposable.md)
   4. Commands flow
       1. Application Domains
           1. Introduction
