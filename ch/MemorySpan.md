@@ -2,8 +2,7 @@
 
 > [讨论链接](https://github.com/sidristij/dotnetbook/issues/55)
 
-从.NET Core 2.0和.NET Framework 4.5开始，我们可以使用新的数据类型： `Span` 和 `Memory`。要使用它们，您只需要安装 `System.Memory` nuget package
-Starting from .NET Core 2.0 and .NET Framework 4.5 we can use new data types:  `Span` and `Memory`. To use them, you just need to install the `System.Memory` nuget package:
+从.NET Core 2.0和.NET Framework 4.5开始，我们可以使用新的数据类型： `Span` 和 `Memory`。要使用它们，您只需要安装 `System.Memory` nuget package:
 
   - `PM> Install-Package System.Memory`
 
@@ -420,7 +419,7 @@ internal ref partial struct ValueListBuilder<T>
 
 我想谈谈“跨度”功能如何以及为什么值得注意。还有一些事情要谈。这种类型的数据有两个版本：一个用于.NET Core 2.0+，另一个用于其余版本。
 
-**File [Span.Fast.cs, .NET Core 2.0] (https://github.com/dotnet/coreclr/blob/38403e661a4202ca4c8a72e4bbd9a263bddeb891/src/System.Private.CoreLib/shared/System/Span.Fast.cs)**
+**File [Span.Fast.cs, .NET Core 2.0](https://github.com/dotnet/coreclr/blob/38403e661a4202ca4c8a72e4bbd9a263bddeb891/src/System.Private.CoreLib/shared/System/Span.Fast.cs)**
 
 ```csharp
 public readonly ref partial struct Span<T>
@@ -449,7 +448,7 @@ public ref readonly struct Span<T>
 
 让我们看看`Span`如何处理字符串，例如：
 
-**File [coreclr::src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs] (https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs#L409-L416)**
+**File [coreclr::src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs](https://github.com/dotnet/coreclr/blob/2b50bba8131acca2ab535e144796941ad93487b7/src/System.Private.CoreLib/shared/System/MemoryExtensions.Fast.cs#L409-L416)**
 
 ```csharp
 public static ReadOnlySpan<char> AsSpan(this string text)
