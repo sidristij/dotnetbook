@@ -1,4 +1,4 @@
-![](../bin/BookCover-ch.png)
+![](../../bin/BookCover-ch.png)
 
 
 # Table of contents

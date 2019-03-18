@@ -1,4 +1,4 @@
-![](../bin/BookCover-ru.png)
+![](../../bin/BookCover-ru.png)
 
 # Содержание
 
