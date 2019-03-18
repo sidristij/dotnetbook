@@ -1,0 +1,116 @@
+﻿{
+  "version": "1.0.0",
+  "restore": {
+    "projectUniqueName": "C:\\WS\\dotnetbook\\samples\\Rider\\SpanPerformanceTests\\SpanPerformanceTests.csproj",
+    "projectName": "SpanPerformanceTests",
+    "projectPath": "C:\\WS\\dotnetbook\\samples\\Rider\\SpanPerformanceTests\\SpanPerformanceTests.csproj",
+    "outputPath": "C:\\WS\\dotnetbook\\samples\\Rider\\SpanPerformanceTests\\obj\\",
+    "projectStyle": "PackageReference",
+    "crossTargeting": true,
+    "fallbackFolders": [
+      "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+    ],
+    "originalTargetFrameworks": [
+      "net47",
+      "net472",
+      "netcoreapp2.1",
+      "netcoreapp2.2"
+    ],
+    "frameworks": {
+      "netcoreapp2.1": {
+        "projectReferences": {}
+      },
+      "netcoreapp2.2": {
+        "projectReferences": {}
+      },
+      "net47": {
+        "projectReferences": {}
+      },
+      "net472": {
+        "projectReferences": {}
+      }
+    },
+    "warningProperties": {
+      "warnAsError": [
+        "NU1605"
+      ]
+    }
+  },
+  "frameworks": {
+    "netcoreapp2.1": {
+      "dependencies": {
+        "BenchmarkDotNet": {
+          "target": "Package",
+          "version": "[0.11.0, )"
+        },
+        "Microsoft.NETCore.App": {
+          "suppressParent": "All",
+          "target": "Package",
+          "version": "[2.1.0, )",
+          "autoReferenced": true
+        },
+        "System.Memory": {
+          "target": "Package",
+          "version": "[4.5.1, )"
+        }
+      },
+      "imports": [
+        "net461"
+      ],
+      "assetTargetFallback": true,
+      "warn": true
+    },
+    "netcoreapp2.2": {
+      "dependencies": {
+        "BenchmarkDotNet": {
+          "target": "Package",
+          "version": "[0.11.0, )"
+        },
+        "Microsoft.NETCore.App": {
+          "suppressParent": "All",
+          "target": "Package",
+          "version": "[2.2.0-preview-26820-02, )",
+          "autoReferenced": true
+        },
+        "System.Memory": {
+          "target": "Package",
+          "version": "[4.5.1, )"
+        }
+      },
+      "imports": [
+        "net461"
+      ],
+      "assetTargetFallback": true,
+      "warn": true
+    },
+    "net47": {
+      "dependencies": {
+        "BenchmarkDotNet": {
+          "target": "Package",
+          "version": "[0.11.0, )"
+        },
+        "System.Memory": {
+          "target": "Package",
+          "version": "[4.5.1, )"
+        }
+      }
+    },
+    "net472": {
+      "dependencies": {
+        "BenchmarkDotNet": {
+          "target": "Package",
+          "version": "[0.11.0, )"
+        },
+        "System.Memory": {
+          "target": "Package",
+          "version": "[4.5.1, )"
+        }
+      }
+    }
+  },
+  "runtimes": {
+    "win7-x86": {
+      "#import": []
+    }
+  }
+}

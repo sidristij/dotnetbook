@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>SpanPerformanceTests.SpanIndexer</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet=v0.11.0, OS=Windows 10.0.16299.611 (1709/FallCreatorsUpdate/Redstone3)
+Intel Core i7-6700 CPU 3.40GHz (Max: 3.41GHz) (Skylake), 1 CPU, 8 logical and 4 physical cores
+Frequency=3328124 Hz, Resolution=300.4696 ns, Timer=TSC
+.NET Core SDK=2.2.100-preview1-009349
+  [Host]        : .NET Core 2.2.0-preview-26820-02 (CoreCLR 4.6.26820.03, CoreFX 4.6.26820.02), 64bit RyuJIT
+  .NET 4.7      : .NET Framework 4.7.2 (CLR 4.0.30319.42000), 64bit RyuJIT-v4.7.3132.0
+  .NET 4.7.2    : .NET Framework 4.7.2 (CLR 4.0.30319.42000), 64bit RyuJIT-v4.7.3132.0
+  .NET Core 2.1 : .NET Core 2.1.3 (CoreCLR 4.6.26725.06, CoreFX 4.6.26725.05), 64bit RyuJIT
+  .NET Core 2.2 : .NET Core 2.2.0-preview-26820-02 (CoreCLR 4.6.26820.03, CoreFX 4.6.26820.02), 64bit RyuJIT
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>               Method</th><th>    Job</th><th>Toolchain</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Scaled</th><th>ScaledSD</th>
+</tr>
+</thead><tbody><tr><td>ArrayIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>0.6067 ns</td><td>0.0121 ns</td><td>0.0149 ns</td><td>0.6030 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>ArrayIndexer_Set</td><td>.NET 4.7</td><td>CsProjnet47</td><td>0.5861 ns</td><td>0.0139 ns</td><td>0.0130 ns</td><td>0.5826 ns</td><td>0.97</td><td>0.03</td>
+</tr><tr><td>ArraySegmentIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>4.1642 ns</td><td>0.0896 ns</td><td>0.1255 ns</td><td>4.1172 ns</td><td>6.87</td><td>0.26</td>
+</tr><tr><td>ArraySegmentIndexer_Set</td><td>.NET 4.7</td><td>CsProjnet47</td><td>3.7260 ns</td><td>0.0716 ns</td><td>0.0704 ns</td><td>3.7229 ns</td><td>6.15</td><td>0.18</td>
+</tr><tr><td>StringIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>0.6216 ns</td><td>0.0128 ns</td><td>0.0249 ns</td><td>0.6185 ns</td><td>1.03</td><td>0.05</td>
+</tr><tr><td>SpanArrayIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>1.0164 ns</td><td>0.0206 ns</td><td>0.0193 ns</td><td>1.0113 ns</td><td>1.68</td><td>0.05</td>
+</tr><tr><td>SpanArraySegmentIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>0.8996 ns</td><td>0.0179 ns</td><td>0.0167 ns</td><td>0.9003 ns</td><td>1.48</td><td>0.04</td>
+</tr><tr><td>SpanStringIndexer_Get</td><td>.NET 4.7</td><td>CsProjnet47</td><td>1.0267 ns</td><td>0.0160 ns</td><td>0.0202 ns</td><td>1.0243 ns</td><td>1.69</td><td>0.05</td>
+</tr><tr><td>SpanArrayIndexer_Set</td><td>.NET 4.7</td><td>CsProjnet47</td><td>1.0127 ns</td><td>0.0200 ns</td><td>0.0187 ns</td><td>1.0094 ns</td><td>1.67</td><td>0.05</td>
+</tr><tr><td>SpanArraySegmentIndexer_Set</td><td>.NET 4.7</td><td>CsProjnet47</td><td>1.0722 ns</td><td>0.0218 ns</td><td>0.0491 ns</td><td>1.0671 ns</td><td>1.77</td><td>0.09</td>
+</tr><tr><td>ArrayIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>0.6072 ns</td><td>0.0125 ns</td><td>0.0149 ns</td><td>0.6042 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>ArrayIndexer_Set</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>0.5849 ns</td><td>0.0161 ns</td><td>0.0192 ns</td><td>0.5811 ns</td><td>0.96</td><td>0.04</td>
+</tr><tr><td>ArraySegmentIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>4.1139 ns</td><td>0.0823 ns</td><td>0.1070 ns</td><td>4.0840 ns</td><td>6.78</td><td>0.24</td>
+</tr><tr><td>ArraySegmentIndexer_Set</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>3.7793 ns</td><td>0.0747 ns</td><td>0.1206 ns</td><td>3.7473 ns</td><td>6.23</td><td>0.24</td>
+</tr><tr><td>StringIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>0.6090 ns</td><td>0.0151 ns</td><td>0.0141 ns</td><td>0.6025 ns</td><td>1.00</td><td>0.03</td>
+</tr><tr><td>SpanArrayIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>1.0338 ns</td><td>0.0204 ns</td><td>0.0362 ns</td><td>1.0238 ns</td><td>1.70</td><td>0.07</td>
+</tr><tr><td>SpanArraySegmentIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>0.9446 ns</td><td>0.0193 ns</td><td>0.0514 ns</td><td>0.9431 ns</td><td>1.56</td><td>0.09</td>
+</tr><tr><td>SpanStringIndexer_Get</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>1.0588 ns</td><td>0.0214 ns</td><td>0.0521 ns</td><td>1.0430 ns</td><td>1.74</td><td>0.09</td>
+</tr><tr><td>SpanArrayIndexer_Set</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>1.0172 ns</td><td>0.0206 ns</td><td>0.0361 ns</td><td>1.0033 ns</td><td>1.68</td><td>0.07</td>
+</tr><tr><td>SpanArraySegmentIndexer_Set</td><td>.NET 4.7.2</td><td>CsProjnet472</td><td>1.0565 ns</td><td>0.0215 ns</td><td>0.0528 ns</td><td>1.0353 ns</td><td>1.74</td><td>0.10</td>
+</tr><tr><td>ArrayIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.7173 ns</td><td>0.0144 ns</td><td>0.0260 ns</td><td>0.7185 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>ArrayIndexer_Set</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.5920 ns</td><td>0.0122 ns</td><td>0.0140 ns</td><td>0.5942 ns</td><td>0.83</td><td>0.04</td>
+</tr><tr><td>ArraySegmentIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>3.7554 ns</td><td>0.0753 ns</td><td>0.1653 ns</td><td>3.7177 ns</td><td>5.24</td><td>0.30</td>
+</tr><tr><td>ArraySegmentIndexer_Set</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>3.7553 ns</td><td>0.0733 ns</td><td>0.1265 ns</td><td>3.7574 ns</td><td>5.24</td><td>0.26</td>
+</tr><tr><td>StringIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.6926 ns</td><td>0.0140 ns</td><td>0.0177 ns</td><td>0.6920 ns</td><td>0.97</td><td>0.04</td>
+</tr><tr><td>SpanArrayIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.6209 ns</td><td>0.0127 ns</td><td>0.0136 ns</td><td>0.6228 ns</td><td>0.87</td><td>0.04</td>
+</tr><tr><td>SpanArraySegmentIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.6320 ns</td><td>0.0125 ns</td><td>0.0139 ns</td><td>0.6301 ns</td><td>0.88</td><td>0.04</td>
+</tr><tr><td>SpanStringIndexer_Get</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.6363 ns</td><td>0.0075 ns</td><td>0.0070 ns</td><td>0.6351 ns</td><td>0.89</td><td>0.03</td>
+</tr><tr><td>SpanArrayIndexer_Set</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.7311 ns</td><td>0.0150 ns</td><td>0.0284 ns</td><td>0.7311 ns</td><td>1.02</td><td>0.05</td>
+</tr><tr><td>SpanArraySegmentIndexer_Set</td><td>.NET Core 2.1</td><td>.NET Core 2.1</td><td>0.6564 ns</td><td>0.0113 ns</td><td>0.0105 ns</td><td>0.6592 ns</td><td>0.92</td><td>0.04</td>
+</tr><tr><td>ArrayIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.7160 ns</td><td>0.0146 ns</td><td>0.0353 ns</td><td>0.7037 ns</td><td>1.00</td><td>0.00</td>
+</tr><tr><td>ArrayIndexer_Set</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6066 ns</td><td>0.0118 ns</td><td>0.0105 ns</td><td>0.6033 ns</td><td>0.85</td><td>0.04</td>
+</tr><tr><td>ArraySegmentIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>3.5756 ns</td><td>0.0898 ns</td><td>0.0840 ns</td><td>3.5657 ns</td><td>5.01</td><td>0.26</td>
+</tr><tr><td>ArraySegmentIndexer_Set</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>3.5116 ns</td><td>0.0401 ns</td><td>0.0375 ns</td><td>3.5259 ns</td><td>4.92</td><td>0.24</td>
+</tr><tr><td>StringIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6785 ns</td><td>0.0078 ns</td><td>0.0073 ns</td><td>0.6821 ns</td><td>0.95</td><td>0.05</td>
+</tr><tr><td>SpanArrayIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6331 ns</td><td>0.0095 ns</td><td>0.0089 ns</td><td>0.6344 ns</td><td>0.89</td><td>0.04</td>
+</tr><tr><td>SpanArraySegmentIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6433 ns</td><td>0.0138 ns</td><td>0.0234 ns</td><td>0.6345 ns</td><td>0.90</td><td>0.05</td>
+</tr><tr><td>SpanStringIndexer_Get</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6227 ns</td><td>0.0109 ns</td><td>0.0102 ns</td><td>0.6243 ns</td><td>0.87</td><td>0.04</td>
+</tr><tr><td>SpanArrayIndexer_Set</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6631 ns</td><td>0.0128 ns</td><td>0.0119 ns</td><td>0.6658 ns</td><td>0.93</td><td>0.05</td>
+</tr><tr><td>SpanArraySegmentIndexer_Set</td><td>.NET Core 2.2</td><td>.NET Core 2.2</td><td>0.6225 ns</td><td>0.0128 ns</td><td>0.0162 ns</td><td>0.6201 ns</td><td>0.87</td><td>0.05</td>
+</tr></tbody></table>
+</body>
+</html>

@@ -1,0 +1,11 @@
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\bin\Release\netcoreapp2.1\SpanPerformanceTests.deps.json
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\bin\Release\netcoreapp2.1\SpanPerformanceTests.runtimeconfig.json
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\bin\Release\netcoreapp2.1\SpanPerformanceTests.runtimeconfig.dev.json
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\bin\Release\netcoreapp2.1\SpanPerformanceTests.dll
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\bin\Release\netcoreapp2.1\SpanPerformanceTests.pdb
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.csprojResolveAssemblyReference.cache
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.csproj.CoreCompileInputs.cache
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.AssemblyInfoInputs.cache
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.AssemblyInfo.cs
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.dll
+C:\WS\dotnetbook\samples\Rider\SpanPerformanceTests\obj\Release\netcoreapp2.1\SpanPerformanceTests.pdb
