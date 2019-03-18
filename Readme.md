@@ -1,8 +1,8 @@
-## This book is available in English, Русском and 中文:
+# This book is available in:
 
-  - If you want to show that you like this book or to express your gratitude to author, Star this project, Fork it and Pull Requests to it.
-  - Если вы хотите показать, что книга вам нравится или выразить благодарность, ставьте звезду проекту, делайте fork и создавайте Pull Requests!
-  - 如果你想表明你喜欢这本书或者表达你对作者的感激之情，点击一个星星。
+  - **English**: If you want to show that you like this book or to express your gratitude to author, Star this project, Fork it and Pull Requests to it.
+  - **Русском**: Если вы хотите показать, что книга вам нравится или выразить благодарность, ставьте звезду проекту, делайте fork и создавайте Pull Requests!
+  - **中文**: 如果你想表明你喜欢这本书或者表达你对作者的感激之情，点击一个星星。
 
 Cover | From Author, Stanislav Sidristij
 -------|-----
