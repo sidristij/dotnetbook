@@ -808,7 +808,7 @@ As I showed you there is no universal pattern to implement IDisposable. Moreover
 
 **FileEntry Class** [cmsinterop.cs](http://referencesource.microsoft.com/#mscorlib/system/deployment/cmsinterop.cs,eeedb7095d7d3053,references)
 
-> This code is written in a hurry just to close the issue. Obviously, the author wanted to do something but changed his mind and kept a flawed solution
+> This code is written in a hurry just to close the issue. Obviously, the author wanted to do something but changed their mind and kept a flawed solution
 
 ```csharp
 internal class FileEntry : IDisposable
