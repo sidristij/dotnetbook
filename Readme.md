@@ -1,4 +1,4 @@
-![](./bin/banner.png)
+[![banner](./bin/banner.png)](https://habr.com/ru/company/clrium/blog/444836/)
 
 # This book is available in:
 
