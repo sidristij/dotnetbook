@@ -1,4 +1,4 @@
-![](.\bin\banner.png)
+![](./bin/banner.png)
 
 # This book is available in:
 
