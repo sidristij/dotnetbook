@@ -1,4 +1,5 @@
 [![banner](./bin/banner.png)](https://habr.com/ru/company/clrium/blog/444836/)
+*Russian Conference*
 
 # This book is available in:
 
