@@ -1,5 +1,5 @@
 [![banner](./bin/banner.png)](https://habr.com/ru/company/clrium/blog/444836/)
-*Russian Conference*
+*Russian .NET Conference announcement*
 
 # This book is available in:
 
