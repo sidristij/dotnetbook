@@ -1,12 +1,12 @@
-# Структура объектов в памяти
+# The structure of objects in memory
 
-> [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/56)
+> [A link to the discussion](https://github.com/sidristij/dotnetbook/issues/56)
 
-До сего момента, говоря про разницу между значимыми и ссылочными типами, мы затрагивали эту тему с высоты конечного разработчика. Т.е. мы никогда не смотрели на то, как они в реальности устроены и какие приемы реализованы в них на уровне CLR. Мы смотрели, фактически, на конечный результат и рассуждали с точки зрения изучения черного ящика. Однако, чтобы понимать суть вещей глубже и чтобы отбросить в сторону последние оставшиеся мысли о какой-либо магии, происходящей внутри CLR, стоит заглянуть в самые ее потроха и изучить те алгоритмы, которые систему типов регулируют.
+In previous chapters, we talked about the difference between value and reference types from a developer’s point of view. We have never looked at how they are designed in reality and what techniques are implemented in them at the level of the CLR. In fact, we were looking at the final result and described the work of these types in terms of a black box. However, to get a deeper insight and to reject any idea about any magic inside the CLR, we should look into its internals and study the algorithms that rule the work of the type system.
 
-## Внутренняя структура экземпляров типов
+## The internal structure of the type instances
 
-Перед тем как начинать рассуждение о строении управляющих блоков системы типов давайте посмотрим на сам объект, на экземпляр любого класса. Если мы создадим в памяти экземпляр любого ссылочного типа, будь то класс или же упакованная структура, то состоять он будет всего из трёх полей: SyncBlockIndex (который на самом деле не только он), указатель на описатель типа и данные. Область данных может содержать очень много полей, но, не умаляя общности, ниже в примере полагаем, что в данных содержится одно поле. Так, если представить эту структуру графически, то мы получим следующее:
+Before we start talking about the structure of control blocks in the type system, let’s look at an object itself, i.e. an instance of any class. If we create an instance of any reference type in memory, whether it is a class, or a encapsulated structure, it will consist of three fields: `SyncBlockIndex` (which is in fact not only it), a pointer to a type descriptor and data. The data region can contain a lot of fields. That said, we however give the below examples as if they have only one field in data. So, this is how our visualization of this structure would look like:
 
 **System.Object**
 
@@ -15,25 +15,25 @@
   ----------------------------------------------
   |  SyncBlkIndx |   VMT_Ptr    |     Data     |
   ----------------------------------------------
-  |  4 / 8 байт  |  4 / 8 байт  |  4 / 8 байт  |
+  |  4 / 8 byte  |  4 / 8 byte  |  4 / 8 byte  |
   ----------------------------------------------
   |  0xFFF..FFF  |  0xXXX..XXX  |      0       |
   ----------------------------------------------
                  ^
-                 | Сюда ведут ссылки на объект. Т.е. не в начало, а на VMT
+                 | Here is the place indicated by a reference to an object. I mean not the beginning, but the VMT.
 
   Sum size = 12 (x86) | 24 (x64)
 ```
 
-Т.е. фактически размер экземпляра типа зависит от конечной платформы, на которой будет работать приложение.
+Thus, the size of type instances in fact depends on the platform an app will work on.
 
-Далее давайте проследуем по указателю `VMT_Ptr` и посмотрим, какая структура данных лежит по этому адресу. Для всей системы типов этот указатель является самым главным: именно через него работает и наследование, и реализация интерфейсов, и приведение типов, и много чего ещё. Этот указатель - отсылка в систему типов .NET CLR, паспорт объекта, по которому CLR осуществляет приведение типов, понимает объем памяти, занимаемый объектом, именно при помощи него GC так лихо обходит объект, определяя, по каким адресам лежат указатели на объекты, а по каким - просто числа. Именно через него можно узнать вообще все об объекте и заставить CLR отрабатывать его по-другому. А потому именно им и займёмся.
+Next, let’s follow the `VMT_Ptr` pointer and see what kind of data structure is at this address. This pointer is the most important for the whole type system as it is used for the inheritance, interface implementation, type casting and so on. This pointer is a reference to the .NET CLR type system, a kind of type ID used by CLR to cast types or to measure the size of memory allocated to an object. It is this pointer that allows GC to go through an object graph so swiftly and to determine which addresses are owned by the pointers to objects and which – by values. Also, with this pointer you can learn everything about an object and make the CLR handle it differently. That’s why we will study this pointer in detail.
 
-### Структура Virtual Methods Table
+### Virtual Method Table structure
 
-Описание самой таблицы доступно по адресу в [GitHub CoreCLR](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h), и если отбросить все лишнее (а там 4381 строка), [выглядит она следующим образом](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h#L4099-L4114):
+The description of the table itself is available at [GitHub CoreCLR](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h). Leaving aside unnecessary details (and there are 4,381 lines there), [it looks this way](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h#L4099-L4114): 
 
-> Это версия из CoreCLR. Если смотреть на структуру полей в .NET Framework, то она будет отличаться расположением полей и расположением отдельных битов системной информации из двух битовых полей `m_wFlags` и `m_wFlags2`.
+> This is the version from CoreCLR. If we look at the structure of fields in .NET Framework, it will be different in the order of fields and the order of system information bits from `m_wFlags` and `m_wFlags2` bit fields.
 
  ```cpp
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
@@ -53,9 +53,9 @@
     WORD  m_wNumInterfaces;
  ```
 
- Согласитесь, выглядит несколько пугающе. Причём пугающе выглядит не то, что тут всего 6 полей (а где все остальные?), а то, что для достижения этих полей, необходимо пропустить 4,100 строк логики. Я лично ожидал тут увидеть что-то готовое, чего не надо дополнительно вычислять. Однако, тут все совсем не так просто: поскольку методов и интерфейсов в любом типе может быть различное количество, то и сама таблица VMT получается переменного размера. А это в свою очередь означает, что для достижения её наполнения надо вычислять, где находятся все её оставшиеся поля. Но давайте не будем унывать и попытаемся сразу получить выгоду из того, что мы уже имеем: мы, пока что, понятия не имеем, что имеется ввиду под другими полями (разве что два последних), зато поле `m_BaseSize` выглядит заманчиво. Как подсказывает нам комментарий, это - фактический размер для экземпляра типа. Мы только что нашли `sizeof` для классов! Попробуем в бою?
+ Admit, this looks somewhat scary. However, it is scary not because we see here 6 fields only (where are the rest?), but because you need to skip 4,100 lines of code to get to these fields. Personally, I expected to see here something ready-made that you don’t need to calculate additionally. However, it is nowhere near as easy: since any type can contain a different number of methods and interfaces, the VMT can have a variable size. It means that to fill it you need to calculate where the rest of the fields are. However, let’s stay positive and try to benefit from what we already have: we still don’t know what is meant by other fields (except the last two), but the `m_BaseSize` field looks interesting. As a commentary suggests, this is the actual size of an instance of a type. We have just found `sizeof` for classes! It is time to try it in practice.
 
- Итак, чтобы получить адрес VMT мы можем пойти двумя путями: либо сложным, получив адрес объекта, а значит и VMT:
+ We can follow two ways to get a VMT address. The difficult one is to obtain an address of an object and hence the VMT:
 
  ```csharp
 class Program
@@ -65,13 +65,13 @@ class Program
         Union x = new Union();
         x.Reference.Value = "Hello!";
 
-        // Первым полем лежит указатель на место, где лежит указатель на VMT
-        // - (IntPtr*)x.Value.Value - преобразовали число в указатель (сменили тип для компилятора)
-        // - *(IntPtr*)x.Value.Value - взяли по адресу объекта адрес VMT
-        // - (void *)*(IntPtr*)x.Value.Value - преобразовали в указатель
+        // The first field contains a pointer to the location of VMT pointer.
+        // - (IntPtr*)x.Value.Value - here we casted the number into the pointer (we changed the type for the compiler)
+        // - *(IntPtr*)x.Value.Value - here we get the address of the VMT using the address of the object
+        // - (void *)*(IntPtr*)x.Value.Value - here we casted it into the pointer
         void *vmt = (void *)*(IntPtr*)x.Value.Value;
 
-        // вывели в консоль адрес VMT;
+        // here we output the VMT address to the console;
         Console.WriteLine((ulong)vmt);
     }
 
@@ -98,19 +98,19 @@ class Program
 }
  ```
 
-Либо простым, используя .NET FCL API:
+Or, we can follow the simple way and use .NET FCL API:
 
 ```csharp
     var vmt = typeof(string).TypeHandle.Value;
 ```
 
-Второй путь, конечно же, проще (хоть и дольше работает). Однако знание первого очень важно с точки зрения понимания структуры экземпляра типа. Использование второго способа добавляет чувство уверенности: если мы вызываем метод API, то вроде как пользуемся задокументированным способом работы с VMT, а если достаём через указатели, то нет. Однако не стоит забывать, что хранение `VMT *` - стандартно для практически любого ООП языка и для .NET платформы в целом: эта ссылка всегда находится на одном и том же месте, как самое часто используемое поле класса. А самое часто используемое поле класса должно идти первым, чтобы адресация была без смещения и, как результат, была быстрей. Отсюда делаем вывод, что в случае классов положение полей на скорость влиять не будет, а вот у структур - самое часто используемое поле можно поставить первым. Хотя, конечно же, для абсолютного большинства .NET приложений это не даст вообще никакого эффекта: не для таких задач создавалась эта платформа.
+The second way is simpler (though works slower). However, knowing the first one is very important to understand the structure of a type instance. Using the second way provides the sense of confidence: we comply with documented approach of handling VMT by calling an API method, and we are incompliant by using a pointer. However, we shouldn't forget that storing a `VMT *` is generally a standard in practically every OOP language and .NET platform: the reference is always at the same place as it is the most frequently used field of a class. And this most frequently used field of a class should go first, so that addressing would take place without offsetting and, as a result, quicker. Thus, we make a conclusion that for classes the order of fields will not impact the speed. However in structures the most frequently used field should go first. Although this mostly won’t influence .NET applications as this platform was developed for other tasks in mind.
 
-Давайте изучим вопрос структуры типов с точки зрения размера их экземпляра. Нам же надо не просто абстрактно изучать их (это просто-напросто скучно), но дополнительно попробуем извлечь из этого такую выгоду, какую не извлечь обычным способом.
+Let’s study the structure of types with respect to the size of their instances. We won’t learn them in theory (it is boring), instead we will try to get the benefits that we will be unable to get in a usual way.
 
-> **Почему sizeof есть для Value Type, но нет для Reference Type?** На самом деле вопрос, открытый т.к. никто не мешает рассчитать размер ссылочного типа. Единственное обо что можно споткнуться - это не фиксированный размер двух ссылочных типов: `Array` и `String`. А также `Generic` группы, которая зависит целиком и полностью от конкретных вариантов. Т.е. оператором `sizeof(..)` мы обойтись не смогли бы: необходимо работать с конкретными экземплярами. Однако никто не мешает команде CLR сделать метод вида `static int System.Object.SizeOf(object obj)`, который бы легко и просто возвращал бы нам то, что надо. Так почему же Microsoft не реализовала этот метод? Есть мысль, что платформа .NET в их понимании опять же - не та платформа, где разработчик будет сильно переживать за конкретные байты. В случае чего можно просто доставить планок в материнскую плату. Тем более что большинство типов данных, которые мы реализуем, не занимают такие большие объёмы.
+> **Why there is sizeof for a Value Type, but not for a Reference Type?** Actually, this is an open question as no one stops you from calculating the size of a reference type. The only thing you can stumble on is the variable size of two reference types: `Array` and `String`. As well as `Generic` group, that fully depends on particular variants. That means we cannot do without the `sizeof(..)` operator as we need to work with particular instances. However, no one stops the CLR team from implementing the method like `static int System.Object.SizeOf(object obj)` form that would return us what we need in a simple way. Why haven’t Microsoft implemented this method? I guess they think the .NET is not the platform where a developer will worry much about particular bytes. If necessary, you can always add more memory modules to your mother board. Especially, since most data types we implement, don’t take such big volumes of memory.
 
-Но не будем отвлекаться. Итак, чтобы получить размер экземпляра класса, чей размер фиксирован, достаточно написать следующий код:
+However, let’s go back to our issue. So, to get the size of a class instance (with a fixed size), you just need to write the following code:
 
 ```csharp
 unsafe int SizeOf(Type type)
@@ -136,65 +136,65 @@ class Sample
 Console.WriteLine(SizeOf(typeof(Sample)));
 ```
 
-Итак, что мы только что сделали? Первым шагом мы получили указатель на таблицу виртуальных методов. После чего мы считываем размер и получаем `12` - это сумма размеров полей `SyncBlockIndex + VMT_Ptr + поле x` для 32-разрядной платформы. Если мы поиграемся с разными типами, то получим примерно следующую таблицу для x86:
+So, what have we done? Initially, we got the pointer to the VMT. Next, we read the size and get `12` that is the aggregate size of `SyncBlockIndex + VMT_Ptr + x` fields for a 32-bit platform. If we play with different types, we will get something like the following table for x86:
 
-Тип или его определение | Размер    | Комментарий
+A type or its definition | Size   | Comment
 ------------------------|-----------|--------------
-Object | 12 | SyncBlk + VMT + пустое поле
-Int16 | 12 | Boxed Int16: SyncBlk + VMT + данные (выровнено по 4 байта)
-Int32 | 12 | Boxed Int32: SyncBlk + VMT + данные
-Int64 | 16 | Boxed Int64: SyncBlk + VMT + данные
-Char | 12 |  Boxed Char: SyncBlk + VMT + данные (выровнено по 4 байта)
-Double | 16 | Boxed Double: SyncBlk + VMT + данные
-IEnumerable | 0 | Интерфейс не имеет размера: надо брать obj.GetType()
-List\<T> | 24 | Не важно сколько элементов в List<T>, занимать он будет одинаково т.к. хранит данные он в array, который не учитывается
-GenericSample\<int> | 12 | Как видите, generics прекрасно считаются. Размер не поменялся, т.к. данные находятся на том же месте, что и у boxed int. Итог: SyncBlk + VMT + данные
-GenericSample\<Int64> | 16 | Аналогично
-GenericSample\<IEnumerable> | 12 | Аналогично
-GenericSample\<DateTime> | 16 | Аналогично
-string | 14 | Это значение будет возвращено для любой строки, т.к. реальный размер должен считаться динамически. Однако он подходит для размера под пустую строку. Прошу заметить, что размер не выровнен по разрядности: по сути, это поле использоваться не должно
-int[]{1} | 24554 | Для массивов в данном месте лежат совсем другие данные, также их размер не является фиксированным, потому его необходимо считать отдельно
+Object | 12 | SyncBlk + VMT + empty field
+Int16 | 12 | Boxed Int16: SyncBlk + VMT + data (4 bytes aligned)
+Int32 | 12 | Boxed Int32: SyncBlk + VMT + data
+Int64 | 16 | Boxed Int64: SyncBlk + VMT + data
+Char | 12 |  Boxed Char: SyncBlk + VMT + data (4 bytes aligned)
+Double | 16 | Boxed Double: SyncBlk + VMT + data
+IEnumerable | 0 | The interface doesn’t have a size: we should use obj.GetType()
+List\<T> | 24 | It doesn’t matter how many elements are there in List<T>. It will require the same size of memory as it stores data in the array that is not counted.
+GenericSample\<int> | 12 | As you see, generics are perfectly counted. The size hasn’t changed as the data is in the same place as in case of `boxed int`. The result: SyncBlk + VMT + data
+GenericSample\<Int64> | 16 | Likewise
+GenericSample\<IEnumerable> | 12 | Likewise
+GenericSample\<DateTime> | 16 | Likewise
+string | 14 | This value will be returned for any string as the real size should be calculated dynamically. However, it is suitable for the empty string size. Note that the size is not aligned with number of bits: in fact this field is not intended for use.
+int[]{1} | 24554 | For arrays, completely different data is stored here. In addition, their size is not fixed and should be calculated separately.
 
-Как видите, когда система хранит данные о размере экземпляра типа, то она фактически хранит данные для ссылочного вида этого типа (т.е. в том числе для ссылочного варианта значимого). Давайте сделаем некоторые выводы:
+As you see, when the system stores data about the size of an instance, in fact it stores data for a reference version of this type (i.e. including the reference version of a value type). Let’s make some conclusions:
 
-  1. Если вы хотите знать, сколько займёт значимый тип как значение, используйте `sizeof(TType)`
-  1. Если вы хотите рассчитать, чего вам будет стоить боксинг, то вы можете округлить `sizeof(TType)` в большую сторону до размера слова процессора (4 или 8 байт) и прибавить ещё 2 слова (`2 * sizeof(IntPtr)`). Или же взять это значение из `VMT` типа.
-  1. Расчёт выделенного объем памяти в куче представлен для следующих типов:
-     1. Обычный ссылочный тип фиксированного размера: мы можем забрать размер экземпляра из `VMT`;
-     1. Cтрока, необходимо вручную считать её размер (это вообще редко когда может понадобиться, но, согласитесь, интересно)
-     1. Массив, то его размер также рассчитывается отдельно: на основании размера его элементов и их количества. Эта задачка может оказаться куда более полезной: ведь именно массивы первые в очереди на попадание в `LOH`
+  1. If you want to know how much memory a value type will take as a value, use `sizeof(TType)`.
+  1. If you want to calculate the cost of boxing, you can round `sizeof(TType)` up to the size of a processor word (4 or 8 bytes) and add 2 more words (`2 * sizeof(IntPtr)`). Or, you can get this value from the `VMT` of a type.
+  1. The calculation of the memory amount allocated on the heap is represented for the following types:
+     1. The usual fixed size reference type: we can get the size of an instance from a `VMT`;
+     1. For a string, you should calculate its size manually (it is rarely required, but, you should admit, it is interesting).
+     1. The size of an array is calculated separately based on the size and quantity of its elements. This task could be more useful as arrays are most likely to get into `LOH`.
 
 ### System.String
 
-Про строки в вопросах практики мы поговорим отдельно: этому, относительно небольшому, классу можно выделить целую главу. А в рамках главы про строение VMT мы поговорим про строение строк на низком уровне. Для хранения строк применяется стандарт UTF16. Это значит, что каждый символ занимает 2 байта. Дополнительно в конце каждой строки хранится null-терминатор – значение, которое идентифицирует окончание строки. Также в экземпляре хранится длина строки в виде `Int32` числа - чтобы не считать длину каждый раз, когда она понадобится (про кодировки мы поговорим отдельно). На схеме ниже представлена информация о занимаемой памяти строкой:
+We will talk about strings in terms of practice separately: this relatively small class is worth a whole chapter. And in the chapter about the design of a VMT we will talk about the low-level design of strings. Strings are stored based on UTF16. It means that each character takes 2 bytes. Additionally each string ends with a null terminator — a special value that indicates the end of a string. An instance also stores the length of a string as a `Int32` number to avoid counting the length each time when necessary (we will talk about encoding separately). The diagram below represents the information about memory allocated for a string:
 
 ```
-  // Для .NET Framework 3.5 и младше
+  // For.NET Framework 3.5 and earlier
   ----------------------------------------------------------------------------------------------------
   |  SyncBlkIndx |    VMTPtr     |  ArrayLength   |     Length     |   char   |   char   |   Term    |
   ----------------------------------------------------------------------------------------------------
-  |  4 / 8 байт  |  4 / 8 байт   |    4 байта     |    4 байта     |  2 байта |  2 байта |  2 байта  |
+  |  4 / 8 bytes  |  4 / 8 bytes   |    4 bytes     |    4 bytes    |  2 bytes |  2 bytes |  2 bytes |
   ----------------------------------------------------------------------------------------------------
   |      -1      |  0xXXXXXXXX   |        3       |        2       |     a    |     b    |   <nil>   |
   ----------------------------------------------------------------------------------------------------
 
   Term – null terminator
-  Sum size = (8|16) + 2 * 4 + Count * 2 + 2 -> округлить в большую сторону по разрядности. (24 байта в примере)
-  Count – количество символов в строке, не считая терминальный
+  Sum size = (8|16) + 2 * 4 + Count * 2 + 2 -> round up based on the bytes alignment. (24 bytes in example)
+  Count is the number of characters in a string, excluding a terminator character.
   
-  // Для .NET Framework 4 и старше
+  // For .NET Framework 4 and later
   -----------------------------------------------------------------------------------
   |  SyncBlkIndx |    VMTPtr     |     Length     |   char   |   char   |   Term    |
   -----------------------------------------------------------------------------------
-  |  4 / 8 байт  |  4 / 8 байт   |    4 байта     |  2 байта |  2 байта |  2 байта  |
+  |  4 / 8 bytes  |  4 / 8 bytes   |    4 bytes     |    2 bytes |  2 bytes |  2 bytes |
   -----------------------------------------------------------------------------------
   |      -1      |  0xXXXXXXXX   |        2       |     a    |     b    |   <nil>   |
   -----------------------------------------------------------------------------------
-  Term - null terminator
-  Sum size = (8|16) + 4 + Count * 2 + 2) -> округлить в большую сторону по разрядности. (20 байт в примере)
-  Count – количество символов в строке, не считая терминальный
+  Term – null terminator
+  Sum size = (8|16) + 4 + Count * 2 + 2) -> round up based on the bytes alignment. (20 bytes in example)
+  Count is the number of characters in a string, excluding a terminator character.
  ```
-Перепишем наш метод, чтобы научить его считать размер строк:
+Let’s rewrite our method so it could calculate the size of strings:
 
  ```csharp
 unsafe int SizeOf(object obj)
@@ -229,9 +229,9 @@ unsafe int SizeOf(object obj)
 }
 ```
 
-Где `SizeOf(type)` будет вызывать старую реализацию - для фиксированных по длине ссылочных типов.
+Where `SizeOf(type)` will call the previous implementation for fixed size reference types.
 
-Давайте проверим код на практике:
+Let’s check the code in practice.
 
 ```csharp
     Action<string> stringWriter = (arg) =>
@@ -257,20 +257,20 @@ Length of `abcde` string: 24
 Length of `abcdef` string: 28
 ```
 
-Расчёты показывают, что размер строки увеличивается не линейно, а ступенчато на каждые два символа. Это происходит потому, что размер каждого символа - 2 байта, а конечный размер должен без остатка делиться на разрядность процессора (в примере x86), почему происходит соответствующее выравнивание размера строки на 2 байта. Результат нашей работы прекрасен: мы можем посчитать, во что нам обошлась та или иная строка. Последним этапом нам осталось узнать, как рассчитать размер массивов в памяти.
+Calculations indicate that the size of a string increases not at a linear rate but incrementally, by every two characters. This happens because the size of each character is 2 bytes and the ultimate size of string should be aligned by bytes according to CPU architecture (x86 in this case). That is why a string is aligned by 2 bytes. The result of our work is excellent: we can calculate the cost of any string. The last thing we need to know is how to calculate the size of arrays in memory.
 
-### Массивы
+### Arrays
 
-Строение массивов несколько сложнее: ведь у массивов могут быть варианты их строения:
+The structure of arrays is a little more complicated as it has several variants:
 
-  1. Они могут хранить значимые типы, а могут хранить ссылочные
-  1. Массивы могут быть как одномерными, так и многомерными
-  1. Каждое измерение (мера) может начинаться как с `0`, так и с любого другого числа (это, на мой взгляд, очень спорная возможность, избавляющая программиста от необходимости в написании `arr[i - startIndex]` на уровне FCL). Сделано это, вроде как, для совместимости с другими языками, к примеру, в Pascal индексация массива может начинаться не с `0`, а с любого числа, однако мне кажется, что это лишнее.
+  1. They can store both value and reference types.
+  1. They can be both single-dimensional and multi-dimensional.
+  1. Each dimension can start with `0` as well as with any other number (which is, in my opinion, a very questionable option designed to eliminate the need to write `arr[i - startIndex]` at FCL level). This is done for a sort of compatibility with other languages. For example in Pascal array indexing can start with any number and not only from `0`. However, I think it is unnecessary.
 
-Отсюда возникает некоторая путаность в реализации массивов и невозможность точно предсказать размер конечного массива: мало перемножить количество элементов на их размер. Хотя, конечно, для большинства случаев этого будет достаточно. Важным размер становится, когда мы боимся попасть в LOH. Однако у нас и тут возникают варианты: мы можем просто накинуть к размеру, подсчитанному "на коленке", какую-то константу сверху (например, 100), чтобы понять, перешагнули мы границу в 85000 или нет. Однако, в рамках данного раздела задача несколько другая: понять структуру типов. На неё и посмотрим:
+It produces some confusion in the implementation of arrays and inability to predict the size of a resulting array exactly: it is not enough to multiply the number of elements by their sizes. However for the majority of cases that will be enough, of course. The size becomes important if we afraid of getting into LOH. But even here we have some variants: we can add some constant value (for example 100) to a size that we calculated in a quick way to understand whether we have passed the threshold of 85,000 or not. However, in terms of this chapter our task is different — to understand the structure of types. Let’s go to it:
 
 ```
-  // Заголовок
+  // Header
   ----------------------------------------------------------------------------------------
   |   SBI   |  VMT_Ptr |  Total  |  Len_1  |  Len_2  | .. |  Len_N  |  Term   | VMT_Child |
   ----------------------------------opt-------opt------------opt-------opt--------opt-----
@@ -279,14 +279,14 @@ Length of `abcdef` string: 28
   | 0xFF.FF | 0xXX.XX  |    ?    |    ?    |    ?    |    |    ?    | 0x00.00 | 0xXX.XX  |
   ----------------------------------------------------------------------------------------
 
-  - opt: опционально
+  - opt: optional
   - SBI: Sync Block Index
-  - VMT_Child: присутствует, только если массив хранит данные ссылочного типа
-  - Total: присутствует для оптимизации. Общее количество элементов массива с учётом всех размерностей
-  - Len_2..Len_N, Term: присутствуют, только если размерность массива более 1 (регулируется битами в VMT->Flags)
+  - VMT_Child: present only if an array stores the data of a reference type
+  - Total: present for optimization. The total number of array elements with all dimensions taken in account.
+  - Len_2..Len_N, Term: present only if the dimension of an array is more than 1 (regulated by bits in VMT->Flags)
 ```
 
-Как мы видим, заголовок типа хранит данные об измерениях массива: их число может быть как 1, так и достаточно большим: фактически их размер ограничивается только null-терминатором, означающим, что перечисление закончено. Данный пример доступен полностью в файле [GettingInstanceSize](./samples/GettingInstanceSize.linq), а ниже я приведу только его самую важную часть:
+As we can see, the header of a type contains the information about array dimensions the number of which can be from 1 to many. In fact, their size is limited only by a null terminator, meaning that enumeration is over. The following example is fully available at [GettingInstanceSize](./samples/GettingInstanceSize.linq). Below, I will put only its most important part: 
 
 ```csharp
 public int SizeOf()
@@ -357,11 +357,11 @@ public int SizeOf()
 }
 ```
 
-Этот код учитывает все вариации типов массивов, и может быть использован для расчёта его размера:
+This code takes into account all the variants of array types and can be used to calculate the size of an array:
 
 ```csharp
 Console.WriteLine($"size of int[]{{1,2}}: {SizeOf(new int[2])}");
-Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[1,2])}");
+Console.WriteLine($"size of int[2,1]{{1,2}}: {SizeOf(new int[1.2])}");
 Console.WriteLine($"size of int[2,3,4,5]{{...}}: {SizeOf(new int[2, 3, 4, 5])}");
 
 ---
@@ -370,17 +370,17 @@ size of int[2,1]{1,2}: 32
 size of int[2,3,4,5]{...}: 512
 ```
 
-### Выводы к разделу
+### Conclusions to a section
 
-На данном этапе мы научились нескольким достаточно важным вещам. Первое - мы разделили для себя ссылочные типы на три группы: ссылочные типы фиксированного размера, generic типы и ссылочные типы переменного размера. Также мы научились понимать структуру конечного экземпляра любого типа (про структуру VMT я пока молчу. Мы там поняли целиком пока что только одно поле: а это тоже большое достижение). Будь то ссылочный тип фиксированного размера (там все предельно просто) или неопределённого размера: массив или строка. Неопределённого потому, что его размер будет определён при создании. С generic типами на самом деле все просто: для каждого конкретного generic типа создаётся своя VMT, в которой будет проставлен конкретный размер.
+At this point we have learned important things. Firstly, we divided reference types into three groups: fixed size, variable size and generic ones. We also learned the way to understand the structure of a final instance of any type (I’m not talking about the structure of a VMT now. For now, we have entirely understood just one field, a big achievement, by the way). It can be a fixed size reference type (everything is pretty simple there) or a reference type with an undefined size: an array or a string. I mean undefined because its size will be defined once this type is created. Generic types are quite simple: each particular generic type has its own VMT, generated for this type, indicating its particular size.
 
-## Таблица методов в Virtual Methods Table (VMT)
+## Design of Virtual Method Table (VMT)
 
-Объяснение работы Methods Table, по большей части носит академический характер: ведь в такие дебри лезть - это как самому себе могилу рыть. С одной стороны, такие закрома таят что-то будоражащее и интересное, хранят некие данные, которые ещё больше раскрывают понимание о происходящем. Однако, с другой стороны, все мы понимаем, что Microsoft не будет нам давать никаких гарантий, что они оставят свой рантайм без изменений и, например, вдруг не передвинут таблицу методов на одно поле вперёд. Поэтому, оговорюсь сразу:
+Explaining how a Method Table works is mainly a academic exercise: stepping in that maze is like digging your own grave. On the one hand, this labyrinth contains something exciting and interesting, some data that reveal even more about what is going on. However, on the other hand we understand that Microsoft doesn’t guarantee they will keep the runtime without changes and, for example, will not move the method table one field forward. That’s why let’s make things clear:
 
-> Информация, представленная в данном разделе, дана вам исключительно для того, чтобы вы понимали, как работает приложение, основанное на CLR, и ручное вмешательство в её работу не даёт никаких гарантий. Однако, это настолько интересно, что я не могу вас отговорить. Наоборот, мой совет - поиграйтесь с этими структурами данных и, возможно, вы получите один из самых запоминающихся опытов в разработке ПО.
+> the information presented in this section is given only for you to understand how a CLR-based application works and that manual interference with its work doesn’t guarantee anything. However, it is so interesting, that I cannot talk you out. On the contrary, I suggest playing with these data structures and maybe you will get one of the most memorable experiences in software development.
 
-Ну, все: предупредил. Теперь давайте окунёмся в мир как говорится зазеркалья. Ведь до сих пор всё зазеркалье сводилось к знаниям структуры объектов: а её по идее мы и так должны знать хотя бы примерно. И по своей сути эти знания зазеркальем не являются, а являются скорее входом в зазеркалье. А потому вернёмся к структуре ```MethodTable```, [описанной в CoreCLR](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h#L4099-L4114):
+OK, I warned you. Now, let’s plunge into the mirror world. Because, until now stepping into the mirror world meant knowing the structure of objects, which we are supposed to now at least approximately. This knowledge is not a mirror-world itself, but the entrance into it. That’s why let’s get back to the structure of a ```MethodTable```, [described in CoreCLR](https://github.com/dotnet/coreclr/blob/master/src/vm/methodtable.h#L4099-L4114):
 
  ```cpp
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
@@ -400,37 +400,37 @@ size of int[2,3,4,5]{...}: 512
     WORD  m_wNumInterfaces;
  ```
 
- А именно к полям `m_wNumVirtuals` и `m_wNumInterfaces`. Эти два поля определяют ответ на вопрос "сколько виртуальных методов и интерфейсов существует у типа?". В этой структуре нет никакой информации об обычных методах, полях, свойствах (которые объединяют методы). Т.е. эта структура **никак не связана с рефлексией**. По своей сути и назначению эта структура создана для работы вызова методов в CLR (и на самом деле в любом ООП: будь то Java, C++, Ruby или же что-то ещё. Просто расположение полей будет несколько другим). Давайте рассмотрим код:
+ In particular, let’s turn to `m_wNumVirtuals` and `m_wNumInterfaces` fields. They define the answer to the question "How many virtual methods and interfaces does a type have?". This structure doesn’t contain any information about usual methods, fields and properties (which unite methods). I mean this structure **has nothing to do with reflection**. In its sense and purpose this structure is made to provide functioning of method calls in the CLR (in any OOP actually, whether it is Java, C++, Ruby or something else, however the arrangement of fields will be different). Let’s examine some code:
 
-```csharp
-public class Sample
-{
-    public int _x;
+ ```csharp
+ public class Sample
+ {
+     public int _x;
 
-    public void ChangeTo(int newValue)
-    {
-        _x = newValue;
-    }
+     public void ChangeTo(int newValue)
+     {
+         _x = newValue;
+     }
 
-    public virtual int GetValue()
-    {
-        return _x;
-    }
-}
+     public virtual int GetValue()
+     {
+         return _x;
+     }
+ }
+ 
+ public class OverriddenSample : Sample
+ {
+     public override GetValue()
+     {
+         return 666;
+     }
+ }
+ 
+ ```
 
-public class OverridedSample : Sample
-{
-    public override GetValue()
-    {
-        return 666;
-    }
-}
+No matter how meaningless these classes seems to be, they are fit for a description in a VMT. And for that, we should understand what’s the difference between a base type and an inherited type in terms of `ChangeTo` and `GetValue` methods.
 
-```
-
-Какими бы бессмысленными не казались эти классы, они нам вполне сгодятся для описания их VMT. А для этого мы должны понять, чем отличаются базовый тип и унаследованный в вопросе методов `ChangeTo` и `GetValue`.
-
-Метод `ChangeTo` присутствует в обоих типах: при этом его нельзя переопределять. Это значит, что он может быть переписан так, и ничего не поменяется:
+The `ChangeTo` method is present in both types and cannot be overridden. That means we can rewrite it in the following way and nothing will change:
 
 ```csharp
  public class Sample
@@ -445,7 +445,7 @@ public class OverridedSample : Sample
      // ...
  }
 
-// Либо в случае если бы он был struc
+// Or, if it was a struct
  public struct Sample
  {
      public int _x;
@@ -459,20 +459,20 @@ public class OverridedSample : Sample
  }
 ```
 
-И при этом кроме архитектурного смысла ничего не изменится: поверьте, при компиляции оба варианта будут работать одинаково, т.к. у экземплярных методов `this` - это всего лишь первый параметр метода, который передаётся нам неявно.
+This code will change only in terms of architecture. Trust me, when compiled both variants will work in the same way as `this` in instance methods is just the first method parameter, that is passed to us implicitly.
 
-> Заранее поясню, почему все объяснения вокруг наследования строятся вокруг примеров на статических методах: по сути, все методы - статические. И экземплярные и нет. В памяти нет поэкземплярно скомпилированных методов для каждого экземпляра класса. Это занимало бы огромное количество памяти: проще одному и тому же методу каждый раз передавать ссылку на экземпляр той структуры или класса, с которыми он работает.
+> I should explain in advance why all considerations are based on examples with static methods: all methods are static in their essence,  including instance ones. Memory doesn’t contain compiled methods for every single instance of a class. This would need a huge amount of memory: it is much easier that a reference to an instance of a structure or a class is passed each time to a method that works with that structure or the class.
 
-Для метода `GetValue` все обстоит совершенно по-другому. Мы не можем просто взять и переопределить метод переопределением *статического* `GetValue` в унаследованном типе: новый метод получит только те участки кода, которые работают с переменной как с `OverridedSample`, а если с переменной работать как с переменной базового типа `Sample`, вызвать сможете только `GetValue` базового типа, поскольку вы понятия не имеете, какого типа на самом деле объект. Для того чтобы понимать, какого типа является переменная и, как результат, какой конкретно метод вызывается, мы можем поступить следующим образом:
+Things work different for the `GetValue` method. We cannot just override a method by overriding *static* `GetValue` in an inherited type: a new method will get only those regions of code, that deal with a variable as with `OverriddenSample`. If you work with a variable as with `Sample` base type variable, you can only call `GetValue` of a base type, as you don’t know the ultimate type of an object. To understand the type of a variable and which method is called, we can do the following:
 
 ```csharp
 void Main()
 {
     var sample = new Sample();
-    var overrided = new OverridedSample();
+    var overridden = new OverridedSample();
 
     Console.WriteLine(sample.Virtuals[Sample.GetValuePosition].DynamicInvoke(sample));
-    Console.WriteLine(overrided.Virtuals[Sample.GetValuePosition].DynamicInvoke(sample));
+    Console.WriteLine(overridden.Virtuals[Sample.GetValuePosition].DynamicInvoke(sample));
 }
 
 public class Sample
@@ -501,9 +501,9 @@ public class Sample
     }
 }
 
-public class OverridedSample : Sample
+public class OverriddenSample : Sample
 {
-    public OverridedSample() : base()
+    public OverriddenSample() : base()
     {
         Virtuals[0] = new Func<Sample, int>(GetValue);
     }
@@ -515,15 +515,15 @@ public class OverridedSample : Sample
 }
 ```
 
-В этом примере мы фактически строим таблицу виртуальных методов вручную, а вызовы делаем по позиции метода в этой таблице. Если вы поняли суть примера, то вы фактически поняли, как строится наследование на уровне скомпилированного кода: методы вызываются по своему индексу в таблице виртуальных методов. Просто когда вы создаёте экземпляр некоторого унаследованного типа, то в его VMT по местам, где у базового типа находятся виртуальные методы, компилятор расположит указатели на переопределённые методы, скопировав из базового типа указатели на методы, которые не переопределялись. Таким образом, отличие нашего примера от реальной VMT заключается только в том, что когда компилятор строит эту таблицу, он заранее знает, с чем имеет дело и создаёт таблицу правильного размера и наполнения сразу же: в нашем примере чтобы построить таблицу для типов, которые будут делать таблицу более крупной за счёт добавления новых методов, придётся изрядно попотеть. Но наша задача заключается в другом, а потому такими извращениями мы заниматься не станем.
+In this example we, in fact, build a VMT manually and call methods based on their position in this table. If you got the idea of this example, you in fact got the idea of how inheritance is built at the level of compiled code: methods are called based on their indexes in a VMT. Just when you create an instance of an inherited type, the places in its VMT, where a base type has virtual methods, will be filled by a compiler with pointers to overridden methods. To do this, the compiler copies pointers to methods which weren’t overridden from the base type. Thus, the only difference between our example and a real VMT is that when a compiler builds this table, it preemptively knows the right size and contents of that table. In our example, we will have to struggle a lot to build a table for types, that will make it larger by adding new methods. But we our goal is different, so we won’t deal with such a nonsense.
 
-Второй вопрос, который возникает сразу после ответа на первый: если с методами теперь все ясно, то зачем тогда в `VMT` находятся интерфейсы? Интерфейсы, если размышлять логически, не входят в структуру прямого наследования. Они находятся как бы сбоку, указывая, что те или иные типы обязаны реализовывать некоторый набор методов. Иметь, по сути, некоторый протокол взаимодействия. Однако, хоть интерфейсы и находятся *сбоку* от прямого наследования, вызывать методы все равно можно. Причём, заметьте: если вы используете переменную интерфейсного типа, то за ней могут скрываться какие угодно классы, базовый тип у которых может быть разве что `System.Object`. Т.е. методы в таблице виртуальных методов, которые реализуют интерфейс, могут находиться совершенно по разным местам. Как же вызов методов работает в этом случае?
+The second question is why there are interfaces in a `VMT` when it is all clear with methods. If we think logically, interfaces are not included in the structure of direct inheritance. They are something on the side, indicating that some types must implement a certain set of methods, i.e. must have a protocol for interaction. Although these interfaces are *on the side* of direct inheritance, you still can call methods. Note, that if you use a variable of an interface type, beyond this variable there may be any classes; and in some cases the only common base class of these classes may be `System.Object` only. That means that methods in a virtual method table that implement an interface can be located anywhere. So how do method calls work in this case?
 
 ## Virtual Stub Dispatch (VSD) [In Progress]
 
-Чтобы разобраться в этом вопросе, необходимо дополнительно вспомнить, что реализовать интерфейс можно двумя путями: сделать можно либо `implicit` реализацию, либо `explicit`. Причём сделать это можно частично: часть методов сделать `implicit`, а часть - `explicit`. Эта возможность на самом деле - следствие реализации и возможно даже не является заранее продуманной: реализуя интерфейс, вы показываете явно или неявно, что в него входит. Часть методов класса может не входить в интерфейс, а методы, существующие в интерфейсе, могут не существовать в классе (они, конечно, существуют в классе, но синтаксис показывает, что архитектурно частью класса они не являются): класс и интерфейс - это в некотором, смысле - параллельные иерархии типов. Также, в плюс к этому, интерфейс - это отдельный тип, а значит, у каждого интерфейса есть собственная таблица виртуальных методов: чтобы каждый смог вызывать методы интерфейса.
+To address this issue, it is necessary to remember that we can implement an interface in two ways: we can choose either `implicit` or `explicit` implementation. Moreover, you can do it partially: some methods will be `implicit`, the other – `explicit`. In fact, this opportunity is the consequence of implementation and probably wasn’t initially planned: by implementing an interface you explicitly or implicitly show what’s inside that interface. Some class methods may not be included into an interface, some methods within an interface may not exist in a class (of course they exist in a class, but syntax shows that they don’t belong to that class architecturally): a class and an interface are parallel hierarchies of types in some sense. Also, an interface is a separate type. It means that every interface has its own VMT so that anybody could call the methods of an interface.
 
-Давайте взглянем на таблицу: как бы могли выглядеть VMT различных типов:
+Let’s look at the table to see how VMTs of different types could be like:
 
 | interface IFoo  |  class A : IFoo  | class B : IFoo |
 ------------------|------------------|-----------------
@@ -532,55 +532,62 @@ public class OverridedSample : Sample
 |                 | -> GetValue()    | -> SetValue()  |
 |                 | -> SetValue()    | LookToMoon()   |
 
-VMT всех трёх типов содержат необходимые методы `GetValue` и `SetValue`, однако они находятся по разным индексам: они не могут везде быть по одним и тем же индексам, поскольку была бы конкуренция за индексы с другими интерфейсами класса. На самом деле для каждого интерфейса создаётся интерфейс - дубль - для каждой его реализации в каждом классе. Имеем 633 реализации `IDisposable` в классах FCL/BCL? Значит имеем 633 дополнительных `IDisposable` интерфейса чтобы поддержать VMT to VMT трансляцию для каждого из классов + запись в каждом классе с ссылкой на его реализацию интерфейсом. Назовём такие интерфейсы **частными интерфейсами**. Т.е. каждый класс имеет свои собственные, **частные интерфейсы**, которые являются "системными" и являются прокси типами до реального интерфейса.
+The VMTs of all three types contain the necessary `GetValue` and `SetValue` methods. However, they are located at different indexes: their index cannot be the same globally as it would cause a collision between indexes of other interfaces of a class. Actually, every interface duplicated each time it’s implemented by a class. So, if we have 633 implementations of `IDisposable` in FCL/BCL classes,  we also have 633 duplicates of `IDisposable` interfaces to support the VMT to VMT translation across every class + a entry in each class with a reference to its interface implementation. We will call such interfaces **private interfaces**. That is each class has its own **private interfaces** that are "system” and act as proxy types to non-virtual interfaces.
 
-Таким образом, получается следующее: у интерфейсов также как и у классов есть наследование виртуальных *интерфейсных* методов, однако наследование это работает не только при наследовании одного интерфейса от другого, но и при реализации интерфейса классом. Когда класс реализует некий интерфейс, то создаётся дополнительный интерфейс, уточняющий какие методы интерфейса-родителя на какие методы конечного класса должны отображаться. Вызывая метод по интерфейсной переменной, вы точно также вызываете метод по индексу из массива VMT, как это делалось в случае с классами, однако для данной реализации интерфейса вы по индексу выберите слот из *унаследованного*, невидимого интерфейса, связывающего оригинальный интерфейс `IDisposable` с нашим классом, интерфейс реализующим.
+Thus, interfaces, just like classes, inherit virtual *interface* methods. However, this inheritance works not only when we inherit one interface from an other but also when a class implements an interface. When a class implements an interface, an additional interface is created that specifies which methods of a parent interface should be inherited from and referenced to in the target class. By calling a method through an interface identifier, you similarly call a method through the index from a VMT as it was in case of classes. However, for this interface implementation you use a slot ID to choose a slot from an *inherited* private interface, through which the original `IDisposable` interface is connected with our class that implements the interface.
 
-Диспетчеризация виртуальных методов через заглушки или **Virtual Stub Dispatch (VSD)** была разработана ещё в 2006 году как замена таблицам виртуальных методов в интерфейсах. Основная идея этого подхода состоит в упрощении кодогенерации и последующего упрощения вызова методов, т.к. первичная реализация интерфейсов на VMT была бы очень громоздкой и требовала бы большого количества работы и времени для построения всех структур всех интерфейсов. Сам код диспетчеризации находится, по сути, в четырёх файлах общим весом примерно в 6400 строк, и мы не строим целей понять его весь. Мы попытаемся в общих словах понять суть происходящих процессов в этом коде.
+The dispatch of virtual methods by stubs or **Virtual Stub Dispatch (VSD)** was developed in 2006 as a replacement for VMTs, specifically in interfaces. This approach simplifies generation of code and method calls as the initial implementation of interfaces with VMT would be very cumbersome and need a huge amount of time and working set to build all structures of all interfaces. The code of dispatching is in four files containing 6,400 lines, and we don’t intend to understand the whole thing. We will try to understand the process in this code in general terms.
 
-Всю логику VSD диспетчеризации можно разбить на два больших раздела: диспетчеризация и механизм заглушек (stubs), обеспечивающих кэширование адресов вызываемых методов по паре значений [тип; номер слота], которые их идентифицируют.
+The whole logic of VSD can be divided into two big sections: dispatch and the mechanism of stubs that caches the addresses of called methods based on a key pair — [typeID; slot No] — that identifies them.
 
-Для полного понимания протекающих при построении VSD процессов, давайте рассмотрим для начала их на очень высоком уровне, а затем - спустимся в самую глубь. Если говорить про механику диспетчеризации, то та откладывает их создание на потом, в силу логической параллельности иерархии интерфейсных типов, в силу того, что их в конечном счёте станет очень много, и в силу того, что большую часть из них JIT никогда создавать не будет, т.к. наличие типов во Framework ещё не означает, что их экземпляры будут созданы. Использование же традиционной VMT для *частных интерфейсов* создало бы ситуацию, при которой JIT пришлось бы создавать VMT для каждого *частного интерфейса* с самого начала. Т.е. создание каждого типа замедлилось бы как минимум в два раза. Основным классом, обеспечивающим диспетчеризацию, является класс `DispatchMap`, который внутри себя инкапсулирует таблицу типов интерфейсов, каждая из которых состоит из таблицы методов, входящих в эти интерфейсы. Каждый метод может быть, в зависимости от стадии своего жизненного цикла, в четырёх состояниях: состояние заглушки типа "метод ещё не был ни разу вызван, его надо скомпилировать и подложить новую заглушку на место старой", состояние заглушки типа "метод должен быть каждый раз найден динамически, т.к. не может быть определён однозначно", состояние заглушки типа "метод доступен по однозначному адресу, а потому вызывается без какого либо поиска", или же полноценное тело метода. 
+To fully understand the design of VSD processes, let’s look at them at a very high level first, and then go into the depth. The dispatch mechanism postpones building of methods because of: 
+- logical parallelism in the hierarchy of interface types, 
+- eventual multitude of methods, 
+- most methods will never be compiled by JIT (because if types are designed in Framework it doesn’t mean their instances will be required). On the other hand, using traditional VMTs for *private interfaces* would cause VMT compilation by JIT for every *private interface* from startup. That means the creation of each type would double degradation. The main class that provides dispatching is `DispatchMap`. It encapsulates a table of interface types, each of which consists of a method table, included in these interfaces. Each method can have one of the four states based on the stage in its life cycle:
+- a stub in the state of “the method has never been called, so it should be compiled, and the old stub must be back patched with a new one”, 
+- a stub in the state of "the method should be found dynamically each time, as it cannot be uniformly defined",
+- a stub in the state of "the method is available at known address and can be called without lookup", or 
+- a fully-fledged body of the method. 
 
-Рассмотрим строение этих структур с точки зрения их генерирования и структур данных, необходимых для этого.
+Let’s revise these structures in respect to their evolution and required the data structures.
 
 ### DispatchMap
 
-DispatchMap – это динамически строящаяся структура данных, являющаяся по своей сути основной структурой данных, на которую опирается работа интерфейсов в CLR. Структура её выглядит следующим образом:
+DispatchMap is a dynamically built main data structure that on which the work of interfaces in the CLR is built. Its structure is the following:
 
 ```
-    DWORD: Количество типов =
-    DWORD: Тип №1
-    DWORD: Количество слотов для типа №1 = M1
-    DWORD: bool: смещения могут быть отрицательными
-    DWORD: Слот №1
-    DWORD: Целевой слот №1
+    DWORD: The number of types = N
+    DWORD: Type 1
+    DWORD: The number of slots for type 1 = M1
+    DWORD: bool: there may be negative offsets
+    DWORD: Slot 1
+    DWORD: Target slot 1
     ...
-    DWORD: Слот №M1
-    DWORD: Целевой слот №M1
+    DWORD: Slot M1
+    DWORD: Target slot M1
     ...
-    DWORD: Тип №
-    DWORD: Количество слотов для типа №1 = M
-    DWORD: bool: смещения могут быть отрицательными
-    DWORD: Слот №1
-    DWORD: Целевой слот №1
+    DWORD: Type N
+    DWORD: The number of slots for the type 1 = MN
+    DWORD: bool: there may be negative offsets
+    DWORD: Slot 1
+    DWORD: Target slot 1
     ...
-    DWORD: Слот №M
-    DWORD: Целевой слот №M
+    DWORD: Slot MN
+    DWORD: Target slot MN
 ```
 
-Т.е. сначала записывается общее количество интерфейсов, реализуемых некоторыми типами. После чего для каждого интерфейса записывается его тип, количество реализуемых этим типом слотов (для навигации по таблице), а также для каждого слота - информация по этому слоту, а также целевой слот в *частном интерфейсе*, который содержит реализации методов для текущего типа.
+Thus, initially, the VSD mechanism writes the number of interfaces implemented by certain types. Then, it writes for every interface the corresponding type, the quantity of slots implemented by that type (for navigation in a table), and then, the information about every slot, including corresponding target slot in a *private interface* that contains the method implementations of a current type.
 
-Для навигации по этой структуре данных предусмотрен класс `EncodedMapIterator`, который является итератором. Т.е. никакой другой доступ, кроме как `foreach`, к `DispatchMap` не предусмотрен. Мало того номера слотов получены как разница реального номера слота и ранее закодированного номера слота. Т.е. получить номер слота в середине таблицы можно, только просмотрев всю структуру с самого начала. Это вызывает множество вопросов касательно производительности работы вызова методов через интерфейсы: ведь если у нас массив объектов, реализующих некий интерфейс, то чтобы понять, какой метод необходимо вызвать, надо просмотреть всю таблицу реализаций. Т.е. по своей сути - найти нужный. Результатом на каждом шаге итерирования будет структура `DispatchMapEntry`, которая покажет, где находится целевой метод: в текущем типе или нет, и какой слот необходимо взять у типа, чтобы получить нужный метод.
+For iterative navigation in this data structure there is the `EncodedMapIterator` class,  so this `DispatchMap` may be handled via `foreach` only. Moreover, the slot No’s. are returned as the delta between the non-virtual slot No. and the previously encoded virtual slot No. It means you can get the slot No. in the middle of a table only by looking through the whole structure from the beginning. This raises a lot of performance issues on method calls via interfaces — if we have an array of objects implementing an interface, we will have to look through the whole table of implementations to understand which method to call  or, essentially, to find the necessary one. Each iteration will result in `DispatchMapEntry` that will show where the target method is located: in this type or not, and if not, what slot No. must be returned to get the target method.
 
 ```csharp
-// DispatchMapTypeID позволяет делать относительную адресацию методов. Т.е. отвечает на вопрос: относительно текущего типа где 
-// находится необходимый метод? В текущем типе или же в другом?
+// DispatchMapTypeID allows the relative addressing of methods. That means it indicates where the target method is located  
+// in relation to a this type. Is it in this type or in some other?
 //
-// Идентификатор типа (Type ID) используется в карте диспетчеризации и хранит внутри себя один из следующих типов данных:
-//   - специальное значение, говорящее, что это - "this" clas
-//   - специальное значение, показывающее, что это - тип интерфейса, не реализованный классом
-//   - индекс в InterfaceMap
+// For dispatch map, Type ID is used to store one of the following data types:
+//   - special value indicating this.class
+//   - special value indicating that this interface type is not yet implemented by a class
+//   - an index in InterfaceMap
 class DispatchMapTypeID
 {
 private:
@@ -611,17 +618,17 @@ private:
 
 #### TypeID Map
 
-Любой метод в адресации по интерфейсам кодируется парой <TypeId;SlotNumber>. TypeId - это, как следует из названия, идентификатор типа. Данное поле отвечает на вопросы: откуда берётся этот идентификатор, и каким образом его отразить на реальный тип.
-Класс `TypeIDMap` хранит карту типов как отражение некоторого TypeId на `MethodTable` конкретного типа, а также - дополнительно - в обратную сторону. Сделано это исключительно из соображений производительности. Построение этих хэш таблиц происходит динамически: по запросу TypeId относительно PTR_MethodTable возвращается либо FatId, либо просто Id. Это надо в некотором смысле просто помнить: FatId и Id - это просто два вида TypeId. И в некотором смысле это "указатель" на MethodTable, т.к. однозначно его идентифицирует.
+Any method in the interface-based addressing is coded by the <TypeId; Slot No> pair. TypeId is obviously the type identifier. This field indicates where this identifier comes from and how it relates to a non-virtual type.
+The `TypeIDMap` class stores a map of types as a representation of specific TypeID’s in `MethodTable`, and works visa versa.  This is solely for the performance. These HashMaps are built dynamically: once invoked, FatId or plain Id is returned in response to query for TypeID from PTR_MethodTable. You should just remember: FatId and Id are just two kinds of TypeId. To some extent, it is a "pointer” to MethodTable as it uniquely identifies.
 
-> **TypeId - это идентификатор MethodTable**. Он может быть двух видов: Id и FatId и по своей сути является обычным числом.
+> **TypeId is an identifier of MethodTable**. It can have two variants: Id and FatId. It is a usual number in its essence.
 
 ```csharp
 class TypeIDMap
 {
 protected:
-    HashMap             m_idMap;  // Хранит map TypeID -> PTR_MethodTable
-    HashMap             m_mtMap;  // Хранит map PTR_MethodTable -> TypeID1
+    HashMap             m_idMap;  // Stores map TypeID -> PTR_MethodTable
+    HashMap             m_mtMap;  // Stores map PTR_MethodTable -> TypeID1
     Crst                m_lock;
     TypeIDProvider      m_idProvider;
     BOOL                m_fUseFatIdsForUniqueness;
@@ -631,26 +638,26 @@ protected:
 }
 ```
 
-Однако со всеми этими трудностями JIT справляется достаточно легко, вписывая вызовы конкретных методов в места их вызова по интерфейсу, когда это возможно. Если JIT понял, что ничего другого вызвано быть не может, он просто поставит вызов конкретного метода. Это - очень и очень сильная особенность JIT компилятора, который делает для нас эту прекрасную оптимизацию.
+However, JIT easily handles all these challenges by inserting method calls when possible into the interface dispatch call sites. If JIT understands that nothing else can be called, it just puts in the call of a particular method. This is a very strong capability of the JIT compiler implementing this wonderful optimization for us.
 
-### Выводы
+### Conclusions
 
-То, что для нас, как для программистов, на языке C# стало обыденностью и вросло корнями в наше сознание настолько, что мы даже не задумываясь понимаем, как делить приложение на классы и интерфейсы, порой реализовано так сложно для понимания, что требуются недели анализа исходных текстов для определения всех зависимостей и логики происходящего. То, что для нас настолько обыденно в использовании, что не вызывает тени сомнения в простоте реализации, на самом деле может скрывать эти сложности реализации. Это говорит нам о том, что инженеры, воплотившие данные идеи, подходили к решению проблем с большим умом, тщательно анализируя каждый шаг. 
+The thing that became natural for C# developers and rooted in our minds so deeply that we don’t even understand how to split an application into classes and interfaces is sometimes implemented so intricately that we need weeks for source texts analyses to determine all the dependencies and logic of what is going on. Something that is so trivial in use and produces no doubts during implementation can actually hide these difficulties of implementation. This means the engineers that put these ideas in action approached these problems with a lot of intelligence, by analyzing each step carefully. 
 
-То описание, которое здесь дано, на самом деле очень поверхностное и короткое: оно очень высокоуровневое. Даже не смотря на то, что относительно любой книги по .NET мы погрузились очень глубоко, данное описание построения VSD и VMT является очень и очень высокоуровневым. Ведь код файлов, описывающих эти две структуры данных, занимает в сумме около 20,000 строк кода. Это ещё не учитывая некоторые части, отвечающие за Generics.
+The description given here is actually quite short and superficial: it is very high-level. In comparison with any .NET book we have gone very deep into the description of VSD and VMT design, but the description is still very high-level. Indeed, the amount of code in the files describing these two structures takes about 20,000 lines. This doesn’t take into account some parts about Generics.
 
-Однако, это позволяет нам сделать несколько выводов:
+However, this lets us make some conclusions:
 
-  - Вызов статичных методов и экземплярных практически ничем не отличаются. А это значит, что нам не надо беспокоиться о том, что работа с экземплярными методами как-то повлияет на производительность. Производительность обоих методов абсолютно идентична при одинаковых условиях
-  - Вызов виртуальных методов хоть и идёт через таблицу VMT, но из-за того, что индексы заранее известны, на каждый вызов дополнительно приходится лишь единственное разыменование указателя. Почти во всех случаях это ни на что не повлияет: проседание производительности (если вообще можно так выразиться) будет настолько маленьким, что им в принципе можно пренебречь
-  - Если говорить об интерфейсах, то тут стоит помнить о диспетчеризации и понимать, что работа через интерфейсы сильно усложняет реализацию подсистемы типов на низком уровне, приводя к ***возможным*** проседаниям в производительности, когда слишком часто, при вызове методов, отсутствует определённость в том, какой метод и какого класса вызывать у интерфейсной переменной. Однако, "интеллект" JIT компилятора позволяет в очень многих случаях не проводить вызовы через диспетчеризацию, а напрямую вызывать метод, интерфейс реализующего
-  - Если вспомнить об обобщениях, то тут возникает ещё один слой абстракции, который вносит сложность в поиск необходимых для вызова методов у типов, реализующих generic интерфейсы.
+  - There is almost no difference between calling static and instance methods. This means we shouldn’t worry that the work with instance methods will somehow affect the performance. The performance of both methods is absolutely identical in equal conditions.
+  - Though virtual methods are called via a VMT, there is only one additional pointer dereference for each call, as indexes are known in advance. In most cases this doesn’t affect anything: the decrease in performance (if I can say like this) will be so insignificant that it can be neglected.
+  - Talking about interfaces we should remember about dispatch and understand that working via interfaces hugely complicates the implementation of type subsystem at a low level bringing ***possible*** decreases in performance when there is often no certainty which method of which class should be called with an interface identifier. However, in many cases the "intelligence” of the JIT compiler allows to call an interface method directly rather than through a dispatch.
+  - For generic types, there appears another layer of abstraction which makes the method lookup more complicated for generic interfaces.
 
-## Раздел вопросов по теме
+## Questions related to the topic.
 
-> Вопрос: почему если каждый класс может реализовать интерфейс, то нельзя вытащить конкретную реализацию интерфейса у объекта?
+> Question: if every class can implement an interface, why cannot we get a particular implementation of an interface from an object?
 
-Ответ прост: это непокрытая возможность CLR при проектировании языка, CLR этот вопрос никак не ограничивает. Мало того, это с высокой долей вероятности будет добавлено в ближайших версиях C#, благо они выходят достаточно быстро. Рассмотрим пример:
+The answer is simple: this opportunity wasn’t covered in the CLR during the language design. However, the CLR doesn’t restrict this.  Moreover, this function will likely be added in future versions of C#, which are released quite often. Let’s have a look at the example.
 
 ```csharp
 void Main()
@@ -691,7 +698,7 @@ class Boo : Foo, IDisposable
 }
 ```
 
-Здесь мы вызываем четыре различных метода и результат их вызова будет таким:
+Here we call four different methods and the result will be the following:
 
 ```csharp
 Foo.IDisposable::Dispose
@@ -700,21 +707,21 @@ Boo.IDisposable::Dispose
 Boo::Dispose()
 ```
 
-Причём, несмотря на то, что мы имеем *explicit* реализацию интерфейса в обоих классах, в классе `Boo` *explicit* реализацию интерфейса `IDisposable` для `Foo` получить не получится. Даже если мы напишем так:
+Despite we have the *explicit* implementation of an interface in both classes, you cannot get the implementation of the `IDisposable` interface for `Foo` in the `Boo` class. Even if we write it the following way:
 
 ```csharp
 ((IDisposable)(Foo)boo).Dispose();
 ```
 
-Все равно мы получим на экране все то же результат:
+We will get the same result:
 
 ```csharp
 Boo.IDisposable::Dispose
 ```
 
-## Что плохого в неявных и множественных реализациях интерфейсов?
+## Why are implicit and multiple implementations of interfaces bad?
 
-В качестве примера "наследования интерфейсов", что аналогично наследованию классов, можно привести следующий код:
+We can demonstrate the following code as the example of "interface inheritance” which is similar to the inheritance of classes.
 
 ```vb
     Class Foo
@@ -745,20 +752,20 @@ Boo.IDisposable::Dispose
     End Class
 
     ''' <summary>
-    ''' Неявно реализует интерфейс
+    ''' Implements the interface implicitly
     ''' </summary>
     Class Doo
         Inherits Foo
 
         ''' <summary>
-        ''' Переопределение явной реализации
+        ''' Overriding the explicit implementation
         ''' </summary>
         Public Overrides Sub DisposeImp()
             Console.WriteLine("Doo.IDisposable::Dispose")
         End Sub
 
         ''' <summary>
-        ''' Неявное перекрытие
+        ''’ Implicit overlapping
         ''' </summary>
         Public Sub Dispose()
             Console.WriteLine("Doo::Dispose()")
@@ -780,9 +787,9 @@ Boo.IDisposable::Dispose
     End Sub
 ```
 
-В нем видно, что `Doo`, наследуясь от `Foo`, неявно реализует `IDisposable`, но при этом переопределяет явную реализацию `IDisposable.Dispose`, что приведёт к вызову переопределения при вызове по интерфейсу, тем самым показывая "наследование интерфейсов" классов `Foo` и `Doo`.
+We can see that `Doo`, inherited from `Foo`, implicitly implement `IDisposable`, while overriding explicit implementation of `IDisposable.Dispose`, that leads to a call of overriding when calling via an interface, indicating the "inheritance of interfaces” of `Foo` and `Doo` classes.
 
-С одной стороны, это вообще не проблема: если бы C# + CLR позволяли такие шалости, мы бы, в некотором, смысле получили нарушение консистентности в строении типов. Сами подумайте: вы сделали крутую архитектуру, все хорошо. Но кто-то почему-то вызывает методы не так, как вы задумали. Это было бы ужасно. С другой стороны, в C++ похожая возможность существует, и там не сильно жалуются на это. Почему я говорю, что это может быть добавлено в C#? Потому что не менее ужасный функционал [уже обсуждается](https://github.com/dotnet/csharplang/issues/52) и выглядеть он должен примерно так:
+On the one hand it is not a problem: if C# + CLR allowed such tricks it would break the consistency in type structure. Just think, you’ve created a wonderful architecture and everything is cool. But somebody calls methods in the way you didn’t plan. This would be horrible. However a similar opportunity exists in C++ and nobody really complains. Why this can be added to C#? Because the functionality that is not less horrible [is already being discussed](https://github.com/dotnet/csharplang/issues/52) and should look something like this:
 
 ```csharp
 interface IA
@@ -801,6 +808,6 @@ interface IC : IA
 }
 ```
 
-Почему это ужасно? Ведь на самом деле это порождает целый класс возможностей. Теперь нам не нужно будет каждый раз реализовывать какие-то методы интерфейсов, которые везде реализовывались одинаково. Звучит прекрасно. Но только звучит. Ведь интерфейс - это протокол взаимодействия. Протокол - это набор правил, рамки. В нем нельзя допускать существование реализаций. Здесь же идёт прямое нарушение этого принципа и введение ещё одного: множественного наследования. Я, честно, сильно против таких доработок, но... Я что-то ушёл в сторону.
+Why is it horrible? This actually brings a whole new class of opportunities. Now we don’t need to implement each time some interface methods that were implemented similarly everywhere. Sounds great. However, not. Because an interface is actually a protocol for interaction. Protocol means a set of rules, some limits. It shouldn’t allow implementations. Here we deal with the direct infringement of this principle and introduction of another one: multiple inheritance. In fact, I object to such refinements a lot, but... I think I got carried away.
 
 [DispatchMap::CreateEncodedMapping](https://github.com/dotnet/coreclr/blob/master/src/vm/contractimpl.cpp#L295-L460)
