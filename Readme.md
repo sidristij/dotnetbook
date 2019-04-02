@@ -1,4 +1,4 @@
-[![banner](./bin/banner.png)](https://habr.com/ru/company/clrium/blog/445626/)
+[![banner](./bin/banner.png)](https://habr.com/ru/company/clrium/blog/446510/)
 *Russian .NET Conference announcement*
 
 # This book is available in:
