@@ -9,7 +9,7 @@
       1. Thread stack
       2. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
       3. [Memory, Span](./MemorySpan.md)
-      4. Types and objects structure
+      4. [Types and objects structure](./ObjectsStructure.md)
       5. Small Objects Heap
       6. Large Objects Heap
       7. Garbage Collection
