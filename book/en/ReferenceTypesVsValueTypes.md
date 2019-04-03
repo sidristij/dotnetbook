@@ -38,7 +38,7 @@ object obj2 = obj;            // Here, we copy a reference to this object. Final
                               // we have one object and two references.
 ```
 
-It seems this property produces ambiguous code constructs such as the change of code in collections:
+It seems this property produces ambiguous code constructs. One of them is values change in collections:
 
 ```csharp
 // Let’s declare a structure
@@ -57,8 +57,7 @@ array[0].Data = 4;
 Console.WriteLine(array[0].Data);
 ```
 
-There is a small trick in this code. It looks like that we get the structure instance first, and then assign a new value to the Data field of the copy. This means we should get `5` again when checking the value. However, this doesn't happen. MSIL has a separate instruction for setting the values of fields in the structures of an array, which increases performance. The code will work as intended: the program will
-output `4` to a console.
+There is a small trick in this code: it looks as if we first get a copy of the structure and then set a new value to the `Data` field of this copy. If this were the case we would get the original number 5 when we try to read the value next time. However, this doesn't happen. MSIL has a separate instruction for setting the values of fields in the structures of an array, which increases performance. The code will work as intended: the program will output `4` to the console.
 
 Let’s see what will happen if we change this code:
 
