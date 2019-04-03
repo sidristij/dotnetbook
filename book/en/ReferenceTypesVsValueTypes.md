@@ -126,9 +126,9 @@ int HairColor;
 int y = 6;
 ```
 
-Both examples are identical in terms of their data location in memory because the value of the structure is the entire structure. In other words, the memory allocated for it is identical to the memory allocated for its fields (as if these fields were not wrapped by the structure syntax).
+Both examples are identical in terms of their data location in memory since the value of a structure is an entire structure. In other words, the memory allocated for a structure is identical to the memory allocated for its fields (as if these fields were not wrapped by the structure syntax).
 
-The next examples are also identical in terms of the elements’ location in memory since the structure takes place where it is defined among other class fields:
+The next examples are also identical in terms of the elements’ location in memory as the structure takes place where it is defined among other class fields:
 
 ```csharp
 // Variant 1
