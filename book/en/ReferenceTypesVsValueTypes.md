@@ -100,7 +100,7 @@ list[0] = copy;
 Console.WriteLine(list[0].Data);
 ```
 
-This code is correct despite its apparent verbosity. The program will output `4` to the console.
+This code is correct despite its apparent redundancy. The program will output `4` to the console.
 
 The next example shows what I mean by _“the value of a structure is an entire structure”_:
 
