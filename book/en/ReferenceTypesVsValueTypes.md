@@ -57,7 +57,7 @@ array[0].Data = 4;
 Console.WriteLine(array[0].Data);
 ```
 
-There is a small trick in this code: it looks as if we first get a copy of the structure and then set a new value to the `Data` field of this copy. If this were the case we would get the original number 5 when we try to read the value next time. However, this doesn't happen. MSIL has a separate instruction for setting the values of fields in the structures of an array, which increases performance. The code will work as intended: the program will output `4` to the console.
+There is a small trick in this code: it looks as if we first get a copy of the structure and then set a new value to the `Data` field of this copy. If this were the case we would get the original number `5` when we try to read the value next time. However, this doesn't happen. MSIL has a separate instruction for setting the values of fields in the structures of an array, which increases performance. The code will work as intended: the program will output `4` to the console.
 
 Let’s see what will happen if we change this code:
 
