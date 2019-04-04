@@ -37,4 +37,4 @@
 
 # License
 
-You can find here: [LICENSE](../LICENSE)
+You can find here: [LICENSE](../../LICENSE)
