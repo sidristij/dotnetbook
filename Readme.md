@@ -1,7 +1,3 @@
-[![banner](./bin/banner.jpg)](https://habr.com/ru/company/clrium/blog/446510/)
-
-*Russian .NET Conference announcement*
-
 # This book is available in:
 
   - **English**: If you want to show that you like this book or to express your gratitude to author, Star this project, Fork it and Pull Requests to it.
