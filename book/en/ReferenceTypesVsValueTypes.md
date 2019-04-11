@@ -78,7 +78,7 @@ list[0].Data = 4;
 Console.WriteLine(list[0].Data);
 ```
 
-The compilation of this code will fail, because when you write `list[0].Data = 4` you get the copy of the structure first. In fact, you are calling an instance method of the `List<T>` type that underlies the access by an index. It takes the copy of a structure from an internal array (`List<T>` stores data in arrays) and returns this copy to you from the access method using an index. Next, you try to modify the copy, which is not used further along. This code is pointless. A compiler prohibits such behavior, knowing that people misuse value types. We should rewrite this example in the following way:
+The compilation of this code will fail, because when you write `list[0].Data = 4` you get the copy of the structure first. In fact, you are calling an instance method of the `List<T>` type that underlies the access by an index. It takes the copy of a structure from an internal array (`List<T>` stores data in arrays) and returns this copy to you from the access method using an index. Next, you try to modify the copy, which is not used further along. This code is just pointless and the compiler prohibits such behavior knowing that people tend to misuse value types. We should rewrite this example in the following way:
 
 ```csharp
 // Let’s declare a structure
@@ -99,10 +99,9 @@ list[0] = copy;
 Console.WriteLine(list[0].Data);
 ```
 
-This code is correct despite its apparent redundancy. The program will output `4` to a console.
+This code is correct despite its apparent redundancy. The program will output `4` to the console.
 
-The next example shows what I mean by “the value of a structure is an
-entire structure”
+The next example shows what I mean by _“the value of a structure is an entire structure”_:
 
 ```csharp
 // Variant 1
@@ -126,7 +125,9 @@ int HairColor;
 int y = 6;
 ```
 
-Both examples are similar in terms of the data location in memory, as the value of the structure is the entire structure. It allocates the memory for itself where it is.
+Both examples are identical in terms of their data location in memory since the value of a structure is an entire structure. In other words, the memory allocated for a structure is identical to the memory allocated for its fields (as if these fields were not wrapped by the structure syntax).
+
+The next examples are also identical in terms of the elements’ location in memory as the structure takes place where it is defined among other class fields:
 
 ```csharp
 // Variant 1
@@ -155,9 +156,9 @@ class Employee
 }
 ```
 
-These examples are also similar in terms of the elements’ location in memory as the structure takes a defined place among class fields. I don’t say they are totally similar as you can operate structure fields using structure methods.
+I am not saying that it is absolutely identical in every sense, only in terms of placement in memory.
 
-Of course, this is not the case of reference types. An instance itself is on the unreachable Small Object Heap (SOH) or the Large Object Heap (LOH). A class field only contains the value of a pointer to an instance: a 32 or 64-bit number.
+Of course, this is not the case of reference types. A reference type instance itself is in the unreachable Small Object Heap (SOH) or the Large Object Heap (LOH). A type class variable contains only a value (32-bit or 64-bit integer) that is a pointer to a specific instance of the class in memory.
 
 Let’s look at the last example to close the issue.
 
@@ -176,9 +177,7 @@ void Method(int x, PersonInfo person, int y);
 void Method(int x, int HairColor, int Width, int Height, int y);
 ```
 
-In terms of memory both variants of code will work in a similar way, but not in terms of architecture. It is not just a replacement of a variable number of arguments. The order changes because method parameters are declared one after another. They are put on the stack the similar way.
-
-However, the stack grows from higher to lower addresses. That means the order of pushing a structure piece by piece will be different from pushing it as a whole.
+In terms of memory both variants of code will work in a similar way, but not in terms of architecture. It is not just a replacement of a variable number of arguments. The order of the structure variables is different because method parameters are put on the stack in the order they are declared, however, the stack grows from higher to lower addresses which means the order of pushing a structure piece by piece will be different from pushing it as a whole.
 
 ## Overridable methods and inheritance
 
