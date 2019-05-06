@@ -2,7 +2,7 @@
 
 > [A link to the discussion](https://github.com/sidristij/dotnetbook/issues/51)
 
-It’s time to talk about exceptions or, rather, exceptional situations. They are important in the context of how different subsystems execute threads. Before we start, let’s look at the definition. What is an exceptional situation?
+It’s time to talk about exceptions or, rather, exceptional situations. Before we start, let’s look at the definition. What is an exceptional situation?
 
 This is a situation that makes the execution of current or subsequent code incorrect. I mean different from how it was designed or intended. Such a situation compromises the integrity of an application or its part, e.g. an object. It brings the application into an extraordinary or exceptional state.
 
