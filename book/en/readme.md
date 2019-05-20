@@ -31,7 +31,7 @@
           3. Security model
       2. Exceptional situations
           1. [Introduction to exceptional situations](./ExceptionalFlow/1-Exceptions-Intro.md)
-          2. Architecture
+          2. [Architecture](./ExceptionalFlow/1-Exceptions-Architecture.md)
           3. Exceptions events
           4. Types of exceptional situations
 
