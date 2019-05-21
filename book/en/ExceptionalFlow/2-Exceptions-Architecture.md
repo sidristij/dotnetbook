@@ -8,7 +8,7 @@ However, to make conclusions about building the architecture of exception classe
 
 ### Based on a theoretical possibility to catch a future exception.
 
-Based on this feature we can divide exceptions into those that will be definitely caught and those that highly likely won’t be caught. Why do I say with *highly likely*? Because there always be someone who will try to catch an exception while this is unnecessary.
+Based on this feature we can divide exceptions into those that will be definitely caught and those that highly likely won’t be caught. Why do I say *highly likely*? Because there always be someone who will try to catch an exception while this is unnecessary.
 
 First, let’s describe the first group of exceptions – those that should be caught.
 
@@ -195,7 +195,7 @@ void Main()
 }
 ```
 
-By wrapping one exception in another we transfer the problem form one level of application to another and make its work more predictable in terms of consumer of this class: the `Main` method.
+By wrapping one exception in another we transfer the problem form one level of application to another and make its work more predictable in terms of a consumer of this class: the `Main` method.
 
 ### Based on reuse issues
 
@@ -356,7 +356,7 @@ Combining these two grouping methods we can make the following conclusions:
 
   – there should be a base type of exceptions inside `Assembly` that will be thrown by this assembly. This type of exceptions should be in a root namespace of the assembly. This will be the first layer of grouping.
   – further, there can be one or several namespaces inside an assembly. Each of them divides the assembly into functional zones, defining the groups of situations, that appear in this assembly. These may be zones of controllers, database entities, data processing algorithms, etc. For us, these namespaces mean grouping types based on their function. However, in terms of exceptions they are grouped based on problems within the same assembly;
-  – exceptions must be inherited from types in the same an an upper-level namespace. This ensures that end user will unambiguously understand situations and won’t catch *wrong* type based exceptions. Admit, it would be strange to catch `global::Finiki.Logistics.OhMyException` by `catch(global::Legacy.LoggerExeption exception)`, while the following code looks absolutely appropriate:
+  – exceptions must be inherited from types in the same upper-level namespace. This ensures that end user will unambiguously understand situations and won’t catch *wrong* type based exceptions. Admit, it would be strange to catch `global::Finiki.Logistics.OhMyException` by `catch(global::Legacy.LoggerExeption exception)`, while the following code looks absolutely appropriate:
 
 ```csharp
 namespace JetFinance.FinancialPipe
@@ -402,13 +402,13 @@ catch (FinancialPipeExceptionBase exception)
 
 ```
 
-Here, the user code calls a library method that, as we know, can throw `XmlParserServiceException` in some situation. And, as we know, this exception refers to inherited namespace `JetFinance.FinancialPipe.FinancialPipeExceptionBase`, which means that there may be some other exceptions — this time `XmlParserService` microservice creates only one exception but other exceptions may appear in future. As we have a convention for creating types of exceptions, we know what entity this new exception will be inherited from and put an encompassing `catch` in advance. That enables us to skip all things irrelevant to us.
+Here, the user code calls a library method that, as we know, can throw `XmlParserServiceException` in some situation. And, as we know, this exception refers to the inherited namespace `JetFinance.FinancialPipe.FinancialPipeExceptionBase`, which means that there may be some other exceptions — this time `XmlParserService` microservice creates only one exception but other exceptions may appear in future. As we have a convention for creating types of exceptions, we know what entity this new exception will be inherited from and put an encompassing `catch` in advance. That enables us to skip all things irrelevant to us.
 
 How to build such a hierarchy of types?
 
   – First of all, we should create a base class for a domain. Let’s call it a domain base class. In this case, a domain is a word that encompasses a number of assemblies, combining them based on some feature: logging, business-logic, UI. I mean functional zones of an application that are as large as possible.
   – Next, we should introduce an additional base class for exceptions which must be caught: all the exceptions that will be caught using the `catch` keyword will be inherited from this base class;
-  – All the exceptions indicating fatal errors should be inherited directly from a domain base class. Thus we will separate them from those caught on architecture level;
+  – All the exceptions indicating fatal errors should be inherited directly from a domain base class. Thus we will separate them from those caught on the architecture level;
   – Divide the domain into functional areas based on namespaces and declare the base type of exceptions that will be thrown from each area. Here it is necessary to use common sense: if an application has a high degree of namespace nesting, you shouldn’t do a base type for each nesting level. However, if there is branching at a nesting level when one group of exceptions goes to one namespace and another group goes to another namespace, it is necessary to use two base types for each subgroup; 
   – Special exceptions should be inherited from the types of exceptions belonging to functional areas
   – If a group of special exceptions can be combined, it is necessary to do it in one more base type: thus you can catch them easier;
@@ -419,6 +419,6 @@ How to build such a hierarchy of types?
 The source of an error can be another basis to combine exceptions in a group. For example, if you design a class library, the following things can form groups of sources: 
 
   – unsafe code call with an error. This situation can be dealt with by wrapping an exception or an error code in its own type of exception while saving returned data (for example the original error code) in a public property of the exception;
-  – call of code by external dependencies, which has thrown exceptions that can’t be caught by our library as they are beyond its area of responsibility. This group can include exceptions from the methods of those entities that were accepted as the parameters of a current method or exceptions from the constructor of a class which method has called an external dependence. For example, a method of our class has called a method of another class, the instance of which was returned via parameters of another method. If an exception indicates that we are the source of a problem, we should generate our own exception while retaining the original one in `InnerExcepton`. However, if we understand that the problem has been caused by an external dependency we ignore this exception as belonging to a group of external dependencies beyond our control;
+  – a call of code by external dependencies, which has thrown exceptions that can’t be caught by our library as they are beyond its area of responsibility. This group can include exceptions from the methods of those entities that were accepted as the parameters of a current method or exceptions from the constructor of a class which method has called an external dependence. For example, a method of our class has called a method of another class, the instance of which was returned via parameters of another method. If an exception indicates that we are the source of a problem, we should generate our own exception while retaining the original one in `InnerExcepton`. However, if we understand that the problem has been caused by an external dependency we ignore this exception as belonging to a group of external dependencies beyond our control;
   – our own code that was accidentally put in an inconsistent state. A good example is text parsing — no external dependencies, no transfer to `unsafe` world, but a problem of parsing occurs.
 
