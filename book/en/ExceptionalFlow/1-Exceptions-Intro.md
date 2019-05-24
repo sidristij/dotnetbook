@@ -31,8 +31,8 @@ But why do we need to define this terminology? Because it will keep us in some b
 
 This example seems a little strange, and it is for a reason. I made this code slightly artificial to show the importance of problems appearing in it. First, let’s look at the `Parse` method. Why should it throw an exception?
 
-  – Because the parameter it accepts is a string, but its output is a number, which is a value type. This number can’t indicate validity of calculations: it just exists. In other words, the method has no means in its interface to communicate a potential problem.
-  – On the other hand, the method expects a correct string that contains some number and no redundant characters. If it doesn’t contain, there is a problem in prerequisites to the method: the code which calls our method has passed wrong data.
+  - Because the parameter it accepts is a string, but its output is a number, which is a value type. This number can’t indicate validity of calculations: it just exists. In other words, the method has no means in its interface to communicate a potential problem.
+  - On the other hand, the method expects a correct string that contains some number and no redundant characters. If it doesn’t contain, there is a problem in prerequisites to the method: the code which calls our method has passed wrong data.
 
 Thus, the situation when this method gets a string with incorrect data is exceptional because the method can return neither a correct value nor anything.  Thus, the only way is to throw an exception.
 
@@ -46,10 +46,10 @@ Exceptions handling might look as easy as ABC: we just need to place `try-catch`
 
 We can see that inside big .NET Framework there are two worlds: everything that belongs to CLR and everything that doesn’t, including all possible errors appearing in Windows and other parts of the unsafe world.
 
-  – Structured Exception Handling (SEH) is a standard way Windows handles exceptions. When `unsafe` methods are called and exceptions are thrown, there is the unsafe <-> CLR conversion of exceptions in both directions: from unsafe to CLR and backward. This is because CLR can call an unsafe method which can call a CLR method in turn.
-  – Vectored Exception Handling (VEH) is a root of SEH and allows you to put your handlers in places where exceptions might be thrown. In particular, it used for placing `FirstChanceException`.
-  – COM+ exceptions appear when the source of a problem is a COM component. In this case, a layer between COM and a .NET method must convert a COM error into a .NET exception.
-  – And, of course, wrappers for HRESULT. They are introduced to convert a WinAPI model (an error code is contained in a return value, while return values are obtained using method parameters) into a model of exceptions because it is an exception that is standard for .NET.
+  - Structured Exception Handling (SEH) is a standard way Windows handles exceptions. When `unsafe` methods are called and exceptions are thrown, there is the unsafe <-> CLR conversion of exceptions in both directions: from unsafe to CLR and backward. This is because CLR can call an unsafe method which can call a CLR method in turn.
+  - Vectored Exception Handling (VEH) is a root of SEH and allows you to put your handlers in places where exceptions might be thrown. In particular, it used for placing `FirstChanceException`.
+  - COM+ exceptions appear when the source of a problem is a COM component. In this case, a layer between COM and a .NET method must convert a COM error into a .NET exception.
+  - And, of course, wrappers for HRESULT. They are introduced to convert a WinAPI model (an error code is contained in a return value, while return values are obtained using method parameters) into a model of exceptions because it is an exception that is standard for .NET.
 
 On the other hand, there are languages above CLI each of which more or less have functions for handling exceptions. For example, recently VB.NET or F# had a richer exception handling functionality expressed in a number of filters that didn’t exist in C#.
 
@@ -168,9 +168,9 @@ catch (ParserException exception) when (exception.ErrorCode == ErrorCode.Missing
 
 The improvement here is not in the lack of `switch` construct. I believe this new construct is better in several things:
 
-  – using `when` for filtering we catch exactly what we want and it’s right in terms of ideology;
-  – the code becomes more readable in this new form. Looking through code our brain can identify blocks for handling errors more easily as it initially searches for `catch` and not `switch-case`;
-  – the last but not least: a preliminary comparison is BEFORE entering the catch block. It means that if we make wrong guesses about potential situations, this construct will work faster than `switch` in the case of throwing an exception again.
+  - using `when` for filtering we catch exactly what we want and it’s right in terms of ideology;
+  - the code becomes more readable in this new form. Looking through code our brain can identify blocks for handling errors more easily as it initially searches for `catch` and not `switch-case`;
+  - the last but not least: a preliminary comparison is BEFORE entering the catch block. It means that if we make wrong guesses about potential situations, this construct will work faster than `switch` in the case of throwing an exception again.
 
 Many sources say that the peculiar feature of this code is that filtering happens *before* stack unrolling. You can see this in situations when there are no other calls except usual between the place where an exception is thrown and the place where filtering check occurs.
 

@@ -123,9 +123,9 @@ void Main()
 
 Which of the two strategies is more appropriate? The area of responsibility is very important. Initially, it may seem that the work and consistency of `WildInvestment` fully depend on `WildStrategy`. Thus, if `WildInvestment` simply ignores this exception, it will go to the upper level and we shouldn’t do anything. However, note that in terms of architecture the `Main` method catches an exception from one level while calling the method from another. How does it look in terms of use? Well, that’s how it looks:
 
-  – the responsibility for this exception was handed over to us;
-  – the user of this class is not sure that this exception was previously passed through a set of methods on purpose;
-  – we start to create new dependencies which we got rid of by calling an intermediate layer.
+  - the responsibility for this exception was handed over to us;
+  - the user of this class is not sure that this exception was previously passed through a set of methods on purpose;
+  - we start to create new dependencies which we got rid of by calling an intermediate layer.
 
 However, there is another conclusion resulting from this one: we should use `catch` in the `DoSomethingWild` method. And this is slightly strange for us: `WildInvestment` is sort of hardly dependent on something. I mean if `PlayRussianRoulette` didn’t work, the same will happen to `DoSomethingWild`: it doesn’t have return codes, but it has to play the roulette. So, what we can do in such a seemingly hopeless situation? The answer is actually simple: being on another level `DoSomethingWild` should throw its own exception that belongs to this level and wrap it in `InnerException` as the original source of a problem: 
 
@@ -281,9 +281,9 @@ throw new MissingModifierParserException(ParserError.MissingModifier);
 
 Using this approach we get some wonderful properties:
 
-  – on the one hand, we keep catching exceptions using a base (common) type;
-  – on the other hand, even catching exceptions with this base type we are still able to identify a specific situation;
-  – plus, we can catch exceptions via a specific type instead of a base type without using the flat structure of classes.
+  - on the one hand, we keep catching exceptions using a base (common) type;
+  - on the other hand, even catching exceptions with this base type we are still able to identify a specific situation;
+  - plus, we can catch exceptions via a specific type instead of a base type without using the flat structure of classes.
 
 I think it is very convenient.
 
@@ -354,9 +354,9 @@ Note that for usual application entities, they inherit both behavior and data an
 
 Combining these two grouping methods we can make the following conclusions: 
 
-  – there should be a base type of exceptions inside `Assembly` that will be thrown by this assembly. This type of exceptions should be in a root namespace of the assembly. This will be the first layer of grouping.
-  – further, there can be one or several namespaces inside an assembly. Each of them divides the assembly into functional zones, defining the groups of situations, that appear in this assembly. These may be zones of controllers, database entities, data processing algorithms, etc. For us, these namespaces mean grouping types based on their function. However, in terms of exceptions they are grouped based on problems within the same assembly;
-  – exceptions must be inherited from types in the same upper-level namespace. This ensures that end user will unambiguously understand situations and won’t catch *wrong* type based exceptions. Admit, it would be strange to catch `global::Finiki.Logistics.OhMyException` by `catch(global::Legacy.LoggerExeption exception)`, while the following code looks absolutely appropriate:
+  - there should be a base type of exceptions inside `Assembly` that will be thrown by this assembly. This type of exceptions should be in a root namespace of the assembly. This will be the first layer of grouping.
+  - further, there can be one or several namespaces inside an assembly. Each of them divides the assembly into functional zones, defining the groups of situations, that appear in this assembly. These may be zones of controllers, database entities, data processing algorithms, etc. For us, these namespaces mean grouping types based on their function. However, in terms of exceptions they are grouped based on problems within the same assembly;
+  - exceptions must be inherited from types in the same upper-level namespace. This ensures that end user will unambiguously understand situations and won’t catch *wrong* type based exceptions. Admit, it would be strange to catch `global::Finiki.Logistics.OhMyException` by `catch(global::Legacy.LoggerExeption exception)`, while the following code looks absolutely appropriate:
 
 ```csharp
 namespace JetFinance.FinancialPipe
@@ -406,19 +406,18 @@ Here, the user code calls a library method that, as we know, can throw `XmlParse
 
 How to build such a hierarchy of types?
 
-  – First of all, we should create a base class for a domain. Let’s call it a domain base class. In this case, a domain is a word that encompasses a number of assemblies, combining them based on some feature: logging, business-logic, UI. I mean functional zones of an application that are as large as possible.
-  – Next, we should introduce an additional base class for exceptions which must be caught: all the exceptions that will be caught using the `catch` keyword will be inherited from this base class;
-  – All the exceptions indicating fatal errors should be inherited directly from a domain base class. Thus we will separate them from those caught on the architecture level;
+  - First of all, we should create a base class for a domain. Let’s call it a domain base class. In this case, a domain is a word that encompasses a number of assemblies, combining them based on some feature: logging, business-logic, UI. I mean functional zones of an application that are as large as possible.
+  - Next, we should introduce an additional base class for exceptions which must be caught: all the exceptions that will be caught using the `catch` keyword will be inherited from this base class;
+  - All the exceptions indicating fatal errors should be inherited directly from a domain base class. Thus we will separate them from those caught on the architecture level;
   – Divide the domain into functional areas based on namespaces and declare the base type of exceptions that will be thrown from each area. Here it is necessary to use common sense: if an application has a high degree of namespace nesting, you shouldn’t do a base type for each nesting level. However, if there is branching at a nesting level when one group of exceptions goes to one namespace and another group goes to another namespace, it is necessary to use two base types for each subgroup; 
-  – Special exceptions should be inherited from the types of exceptions belonging to functional areas
-  – If a group of special exceptions can be combined, it is necessary to do it in one more base type: thus you can catch them easier;
-  – If you suppose the group will be more often caught using a base class, introduce Mixed Mode with ErrorCode.
+  - Special exceptions should be inherited from the types of exceptions belonging to functional areas
+  - If a group of special exceptions can be combined, it is necessary to do it in one more base type: thus you can catch them easier;
+  - If you suppose the group will be more often caught using a base class, introduce Mixed Mode with ErrorCode.
 
 ### Based on the source of an error
 
 The source of an error can be another basis to combine exceptions in a group. For example, if you design a class library, the following things can form groups of sources: 
 
-– unsafe code call with an error. This situation can be dealt with by wrapping an exception or an error code in its own type of exception while saving returned data (for example the original error code) in a public property of the exception;
-– a call of code by external dependencies, which has thrown exceptions that can’t be caught by our library as they are beyond its area of responsibility. This group can include exceptions from the methods of those entities that were accepted as the parameters of a current method or exceptions from the constructor of a class which method has called an external dependence. For example, a method of our class has called a method of another class, the instance of which was returned via parameters of another method. If an exception indicates that we are the source of a problem, we should generate our own exception while retaining the original one in `InnerExcepton`. However, if we understand that the problem has been caused by an external dependency we ignore this exception as belonging to a group of external dependencies beyond our control;
-– our own code that was accidentally put in an inconsistent state. A good example is text parsing — no external dependencies, no transfer to `unsafe` world, but a problem of parsing occurs.
-
+  - unsafe code call with an error. This situation can be dealt with by wrapping an exception or an error code in its own type of exception while saving returned data (for example the original error code) in a public property of the exception;
+  - a call of code by external dependencies, which has thrown exceptions that can’t be caught by our library as they are beyond its area of responsibility. This group can include exceptions from the methods of those entities that were accepted as the parameters of a current method or exceptions from the constructor of a class which method has called an external dependence. For example, a method of our class has called a method of another class, the instance of which was returned via parameters of another method. If an exception indicates that we are the source of a problem, we should generate our own exception while retaining the original one in `InnerExcepton`. However, if we understand that the problem has been caused by an external dependency we ignore this exception as belonging to a group of external dependencies beyond our control;
+  - our own code that was accidentally put in an inconsistent state. A good example is text parsing — no external dependencies, no transfer to `unsafe` world, but a problem of parsing occurs.
