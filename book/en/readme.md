@@ -1,6 +1,5 @@
 ![](../../bin/BookCover.png)
 
-
 # Table of contents
 
   1. Common Language Runtime
@@ -30,10 +29,10 @@
           2. Isolation
           3. Security model
       2. Exceptional situations
-          1. Introduction to exceptional situations
-          2. Architecture
-          3. Exceptions events
-          4. Types of exceptional situations
+          1. [Introduction to exceptional situations](./ExceptionalFlow/1-Exceptions-Intro.md)
+          2. [Architecture](./ExceptionalFlow/2-Exceptions-Architecture.md)
+          3. [Exceptions events](./ExceptionalFlow/3-Exceptions-Events.md)
+          4. [Types of exceptional situations](./ExceptionalFlow/4-Exceptions-Types.md)
 
 # License
 
