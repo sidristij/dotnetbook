@@ -1,4 +1,4 @@
-﻿# Reference Types vs Value Types
+﻿# Ссылочные и значимые типы данных
 
 > [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/57)
 
