@@ -1,3 +1,4 @@
+[![](https://habrastorage.org/webt/m6/y8/g6/m6y8g69h1spogkxkjibwb9t0cgu.jpeg)](https://habr.com/ru/company/clrium/blog/460635/)
 # This book is available in:
 
   - **English**: If you want to show that you like this book or to express your gratitude to author, Star this project, Fork it and Pull Requests to it.
