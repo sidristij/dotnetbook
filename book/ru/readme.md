@@ -9,9 +9,7 @@
       1. [RefTypes, ValueTypes, Boxing & Unboxing](./ReferenceTypesVsValueTypes.md)
       1. [Memory, Span](./MemorySpan.md)
       1. [Структура объектов в памяти](./ObjectsStructure.md)
-      1. Small Objects Heap
-      1. Large Objects Heap
-      1. Garbage Collection
+      1. Управление памятью
           1. [Введение в слой управления памяти](./MemoryManagement/1-MemoryManagement-Intro.md)
           1. [Выделение памяти под объект](./MemoryManagement/2-MemoryManagement-Allocation.md)
           1. [Введение в сборку мусора](./MemoryManagement/3-MemoryManagement-GC-Intro.md)
