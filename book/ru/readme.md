@@ -13,6 +13,12 @@
       1. Large Objects Heap
       1. Garbage Collection
           1. [Введение в слой управления памяти](./MemoryManagement/1-MemoryManagement-Intro.md)
+          1. [Выделение памяти под объект](./MemoryManagement/2-MemoryManagement-Allocation.md)
+          1. [Введение в сборку мусора](./MemoryManagement/3-MemoryManagement-GC-Intro.md)
+          1. [Фаза маркировки](./MemoryManagement/4-MemoryManagement-GC-Mark-Phase.md)
+          1. [Фаза планирования](./MemoryManagement/5-MemoryManagement-GC-Planning-Phase.md)
+          1. [Фазы Sweep/Collect](./MemoryManagement/6-MemoryManagement-GC-Sweep-Collect.md)
+          1. [Выводы по GC и работе над производительностью](./MemoryManagement/7-MemoryManagement-GC-Results.md)
   1. Время жизни объектов и структур данных
       1. [Время жизни сущностей](./LifetimeManagement/1-EntitiesLifetime.md)
       1. [Шаблон Disposable (Disposable Design Principle)](./LifetimeManagement/2-Disposable.md)
