@@ -12,7 +12,7 @@
       1. Small Objects Heap
       1. Large Objects Heap
       1. Garbage Collection
-      1. Statics
+          1. [Введение в слой управления памяти](./MemoryManagement/1-MemoryManagement-Intro.md)
   1. Время жизни объектов и структур данных
       1. [Время жизни сущностей](./LifetimeManagement/1-EntitiesLifetime.md)
       1. [Шаблон Disposable (Disposable Design Principle)](./LifetimeManagement/2-Disposable.md)
