@@ -23,7 +23,7 @@
           1. [Фаза планирования](./Memory/4-ReferenceTypesManagement/4-MemoryManagement-GC-Planning-Phase.md)
           1. [Фазы Sweep/Collect](./Memory/4-ReferenceTypesManagement/5-MemoryManagement-GC-Sweep-Collect.md)
       1. [Выводы по менеджменту памяти и работе над производительностью](./Memory/5-Results.md)
-  1. Поток исполнения команд
+  1. Часть 2. Поток исполнения команд
       1. Домены приложений
           1. [Введение в домены приложений](./Execution/A-AppDomains/1-AppDomains-Intro.md)
           1. [Изоляция](./Execution/A-AppDomains/2-AppDomains-Isolation.md)
