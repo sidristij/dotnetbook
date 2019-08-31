@@ -815,4 +815,4 @@ public struct Char : IComparable, IConvertible
 
  - [Библиотечка для получения чистого указателя на объект](https://github.com/mumusan/dotnetex/blob/master/libs/)
 
-> Далее: [Структура объектов в памяти](.\2-ObjectsStructure.md)
+> Далее: [Структура объектов в памяти](./2-ObjectsStructure.md)

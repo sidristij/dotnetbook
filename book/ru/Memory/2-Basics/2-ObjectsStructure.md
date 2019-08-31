@@ -805,4 +805,4 @@ interface IC : IA
 
 [DispatchMap::CreateEncodedMapping](https://github.com/dotnet/coreclr/blob/master/src/vm/contractimpl.cpp#L295-L460)
 
-> Далее: [Memory&lt;T&gt; и Span&lt;T&gt;](.\3-MemorySpan.md)
+> Далее: [Memory&lt;T&gt; и Span&lt;T&gt;](./3-MemorySpan.md)
