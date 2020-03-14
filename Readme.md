@@ -1,9 +1,10 @@
-[![](https://habrastorage.org/webt/m6/y8/g6/m6y8g69h1spogkxkjibwb9t0cgu.jpeg)](https://habr.com/ru/company/clrium/blog/460635/)
 # This book is available in:
 
   - **English**: If you want to show that you like this book or to express your gratitude to author, Star this project, Fork it and Pull Requests to it.
   - **Русском**: Если вы хотите показать, что книга вам нравится или выразить благодарность, ставьте звезду проекту, делайте fork и создавайте Pull Requests!
   - **中文**: 如果你想表明你喜欢这本书或者表达你对作者的感激之情，请Star、Fork、PR一条龙。
+
+Многим из вас есть, что сказать, чем дополнить главы этого труда. Не стесняйтесь: я помогу и редактурой и переводом на конечные языки.
 
 Cover | From Author, Stanislav Sidristij
 -------|-----
