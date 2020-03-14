@@ -1,0 +1,140 @@
+@font-face {
+    font-family: 'JB Mono';
+    src: local('JetBrains Mono'),
+    url('{RES_PATH}/fonts/woff2/JetBrainsMono-Italic.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/JetBrainsMono-Italic.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/JetBrainsMono-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'JB Mono';
+    src: local('JetBrains Mono'),
+    url('{RES_PATH}/fonts/woff2/JetBrainsMono-Regular.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/JetBrainsMono-Regular.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/JetBrainsMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'JB Mono';
+    src: local('JetBrains Mono'),
+    url('{RES_PATH}/fonts/woff2/JetBrainsMono-Medium-Italic.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/JetBrainsMono-Medium-Italic.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/JetBrainsMono-Medium-Italic.ttf') format('truetype');
+    font-weight: 600;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'JB Mono';
+    src: local('JetBrains Mono'),
+    url('{RES_PATH}/fonts/woff2/JetBrainsMono-Medium.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/JetBrainsMono-Medium.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/JetBrainsMono-Medium.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'PF Regal Text Pro';
+    src: local('PF Regal Text Pro RegularA'), local('PF-Regal-Text-Pro-RegularA'),
+    url('{RES_PATH}/fonts/woff2/PFRegalTextPro-RegularA.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/PFRegalTextPro-RegularA.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/PFRegalTextPro-RegularA.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'PF Regal Text Pro';
+    src: local('PF Regal Text Pro RegularB'), local('PF-Regal-Text-Pro-RegularB'),
+    url('{RES_PATH}/fonts/woff2/PFRegalTextPro-RegularB.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/PFRegalTextPro-RegularB.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/PFRegalTextPro-RegularB.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'PF Regal Text Pro';
+    src: local('PF Regal Text Pro RegularB Italic'), local('PF-Regal-Text-Pro-RegularB-Italic'),
+    url('{RES_PATH}/fonts/woff2/PFRegalTextPro-RegularBItalic.woff2') format('woff2'),
+    url('{RES_PATH}/fonts/woff/PFRegalTextPro-RegularBItalic.woff') format('woff'),
+    url('{RES_PATH}/fonts/ttf/PFRegalTextPro-RegularBItalic.ttf') format('truetype');
+    font-weight: 600;
+    font-style: italic;
+}
+
+p, li {
+    margin: 0 0 14px;
+    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
+    font-size: 20px;
+    line-height: 26px;
+}
+
+code, .lang-csharp span, .lang-csharp pre {
+    font-family: JB Mono, monospace !important;
+}
+
+.lang-csharp {
+    padding: 4px 0px 14px 20px;
+}
+
+code {
+    font-size: 16px;
+}
+
+.lang-csharp span, .lang-csharp pre {
+    font-size: 16px;
+    line-height: 20px;
+}
+
+p a {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: inset 0 -1px #b88b59;
+}
+
+blockquote p {
+    margin: 16px 0;
+    padding: 12px 12px 13px;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 8px;
+    background: #fff8c4;
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+}
+
+blockquote p code {
+    font-family: consolas, monospace;
+    font-size: 17px;
+    background-color: aliceblue;
+    padding: 4px 6px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    font-weight: 400;
+}
+
+h1 {
+    font-size: 38px;
+    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
+    font-weight: 400;
+}
+
+h1 b {
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-weight: 700;
+    font-size: 37px;
+    line-height: 42px;
+}
+
+h2 {
+    margin-top: 29px;
+    margin-bottom: 10px;
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+}
