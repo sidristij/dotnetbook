@@ -6,7 +6,21 @@ p, li {
     margin: 0 0 14px;
     font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
     font-size: 20px;
-    line-height: 30px;
+    line-height: 32px;
+}
+
+ol, ul {
+    padding-left: 35px;
+    margin-top: 1.1rem;
+    margin-bottom: 1.1rem;
+}
+
+ol li {
+    padding-left: 10px;	
+}
+
+ul li {
+    padding-left: 5px;	
 }
 
 code, .lang-csharp span, .lang-csharp pre {
@@ -86,6 +100,18 @@ h2 {
     font-size: 20px;
     font-weight: 700;
     line-height: 24px;
+    border-bottom-color: aliceblue;
+    border-bottom-style: solid;
+    padding-bottom: 5px;
+}
+
+h3 {
+    margin: 30px 0 10px 0;
+    border-bottom-color: azure;
+    border-bottom-style: solid;
+    border-bottom-width: 2px;
+    font-size: 17pt;
+    font-weight: 300;
 }
 
 
