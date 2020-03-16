@@ -28,15 +28,28 @@ code, .lang-csharp span, .lang-csharp pre {
 }
 
 .lang-csharp {
-    padding: 4px 0px 14px 20px;
+    padding: 4px 0px 14px 0px;
+}
+
+
+.lang-csharp > div {
+    border-left-color: #eee;
+    border-left-style: dotted;
+    border-left-width: 3px;
+    padding-left: 25px;
 }
 
 code {
-    font-size: 16px;
+    font-size: 14px;
+    border: gainsboro;
+    border-width: 1px;
+    border-style: solid;
+    padding: 2px;
+    color: darkslateblue;
 }
 
 .lang-csharp span, .lang-csharp pre {
-    font-size: 16px;
+    font-size: 13px;
     line-height: 20px;
 }
 
