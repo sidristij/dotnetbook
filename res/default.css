@@ -1,3 +1,95 @@
+body {
+    padding: 60px 60px 60px 100px;
+}
+
+p, li {
+    margin: 0 0 14px;
+    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
+    font-size: 20px;
+    line-height: 30px;
+}
+
+code, .lang-csharp span, .lang-csharp pre {
+    font-family: JB Mono, monospace !important;
+}
+
+.lang-csharp {
+    padding: 4px 0px 14px 20px;
+}
+
+code {
+    font-size: 16px;
+}
+
+.lang-csharp span, .lang-csharp pre {
+    font-size: 16px;
+    line-height: 20px;
+}
+
+p a {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: inset 0 -1px #b88b59;
+}
+
+p img {
+    width: 95%;
+}
+
+img < p {
+    text-align: center;
+}
+
+blockquote p {
+    margin: 16px 0;
+    padding: 12px 12px 13px;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 8px;
+    background: #fff8c4;
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+}
+
+blockquote p code {
+    font-family: consolas, monospace;
+    font-size: 17px;
+    background-color: aliceblue;
+    padding: 4px 6px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    font-weight: 400;
+}
+
+h1 {
+    font-size: 38px;
+    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
+    font-weight: 400;
+    margin: 40px 0 10px 0;
+}
+
+h1 b {
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-weight: 700;
+    font-size: 37px;
+    line-height: 42px;
+}
+
+h2 {
+    margin-top: 35px;
+    margin-bottom: 10px;
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+}
+
+
+// Fonts
 @font-face {
     font-family: 'JB Mono';
     src: local('JetBrains Mono'),
@@ -60,81 +152,4 @@
     url('{RES_PATH}/fonts/ttf/PFRegalTextPro-RegularBItalic.ttf') format('truetype');
     font-weight: 600;
     font-style: italic;
-}
-
-p, li {
-    margin: 0 0 14px;
-    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
-    font-size: 20px;
-    line-height: 26px;
-}
-
-code, .lang-csharp span, .lang-csharp pre {
-    font-family: JB Mono, monospace !important;
-}
-
-.lang-csharp {
-    padding: 4px 0px 14px 20px;
-}
-
-code {
-    font-size: 16px;
-}
-
-.lang-csharp span, .lang-csharp pre {
-    font-size: 16px;
-    line-height: 20px;
-}
-
-p a {
-    text-decoration: none;
-    color: inherit;
-    box-shadow: inset 0 -1px #b88b59;
-}
-
-blockquote p {
-    margin: 16px 0;
-    padding: 12px 12px 13px;
-    border: 1px solid rgba(0,0,0,.08);
-    border-radius: 8px;
-    background: #fff8c4;
-    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 24px;
-}
-
-blockquote p code {
-    font-family: consolas, monospace;
-    font-size: 17px;
-    background-color: aliceblue;
-    padding: 4px 6px;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-    padding: 0;
-    font-weight: 400;
-}
-
-h1 {
-    font-size: 38px;
-    font-family: PF Regal,PF Regal Text Pro,Georgia,serif;
-    font-weight: 400;
-}
-
-h1 b {
-    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
-    font-weight: 700;
-    font-size: 37px;
-    line-height: 42px;
-}
-
-h2 {
-    margin-top: 29px;
-    margin-bottom: 10px;
-    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 24px;
 }
