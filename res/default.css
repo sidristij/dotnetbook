@@ -44,7 +44,8 @@ code, .lang-csharp span, .lang-csharp pre {
     border-left-color: #eee;
     border-left-style: dotted;
     border-left-width: 3px;
-    padding-left: 25px;
+    background-color: #f5faff !important;
+    padding: 10px 10px 10px 25px;
 }
 
 code {
@@ -132,16 +133,17 @@ h2 {
 h3 {
     margin: 30px 0 10px 0;
     font-size: 17pt;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 h4 {
     margin: 20px 0 10px 0;
     font-size: 16pt;
-    font-weight: 400;
+    font-weight: 500;
+    font-style: italic;
 }
 
-/* Fonts */
+/* Fonts 
 
 @font-face {
     font-family: 'PF Regal';
@@ -164,7 +166,7 @@ h4 {
     font-weight: bold;
     font-style: normal;
 }
-
+*/
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-Medium.eot');
@@ -253,7 +255,7 @@ h4 {
     font-style: italic;
 }
 
-/*  Regular B *
+/*  Regular B */
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.eot');
@@ -274,4 +276,4 @@ h4 {
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularB.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
-}              */
+}              
