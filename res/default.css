@@ -1,11 +1,16 @@
 body {
     padding: 60px 60px 60px 100px;
     font-family: PF Regal,Georgia,serif;
+    font-size: 16pt;
+    font-weight: 300;
+}
+
+strong {
+    font-weight: 500;
 }
 
 p, li {
     margin: 0 0 14px;
-    font-size: 20px;
     line-height: 32px;
     font-family: inherit;
 }
@@ -56,7 +61,7 @@ code {
     line-height: 20px;
 }
 
-p a {
+p a, li a {
     text-decoration: none;
     color: inherit;
     box-shadow: inset 0 -1px #b88b59;
@@ -70,16 +75,16 @@ p (:has img) {
     text-align: center;
 }
 
+blockquote {
+    background-color: lavenderblush;
+    padding-left: 20px;
+    border-left: 1px solid rgba(0,0,0,.08);
+}
+
 blockquote p {
     margin: 16px 0;
     padding: 12px 12px 13px;
-    border: 1px solid rgba(0,0,0,.08);
-    border-radius: 8px;
-    background: #fff8c4;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 24px;
 }
 
 blockquote p code {
@@ -97,9 +102,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-    font-size: 38px;
+    font-size: 40px;
     font-family: PF Regal,Georgia,serif;
-    font-weight: 400;
+    font-weight: 300;
     margin: 40px 0 20px 0;
     border-bottom-style: ridge;
     padding-bottom: 10px;
@@ -119,20 +124,22 @@ h2 {
     font-size: 20px;
     font-weight: 700;
     line-height: 24px;
-    border-bottom-color: aliceblue;
+    border-bottom-color: grey;
     border-bottom-style: solid;
     padding-bottom: 5px;
 }
 
 h3 {
     margin: 30px 0 10px 0;
-    border-bottom-color: azure;
-    border-bottom-style: solid;
-    border-bottom-width: 2px;
     font-size: 17pt;
-    font-weight: 300;
+    font-weight: 400;
 }
 
+h4 {
+    margin: 20px 0 10px 0;
+    font-size: 16pt;
+    font-weight: 400;
+}
 
 /* Fonts */
 
@@ -246,7 +253,7 @@ h3 {
     font-style: italic;
 }
 
-/*  Regular B */
+/*  Regular B *
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.eot');
@@ -267,4 +274,4 @@ h3 {
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularB.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
-}
+}              */
