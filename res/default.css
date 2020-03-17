@@ -31,16 +31,16 @@ ul li {
     font-family: inherit;
 }
 
-code, .lang-csharp span, .lang-csharp pre {
+code, *[class^='lang-'] span, *[class^='lang-'] pre {
     font-family: JB Mono, monospace !important;
 }
 
-.lang-csharp {
+*[class^='lang-'] {
     padding: 4px 0px 14px 0px;
 }
 
 
-.lang-csharp > div {
+*[class^='lang-'] > div {
     border-left-color: #eee;
     border-left-style: dotted;
     border-left-width: 3px;
@@ -56,7 +56,7 @@ code {
     color: darkslateblue;
 }
 
-.lang-csharp span, .lang-csharp pre {
+*[class^='lang-'] span, *[class^='lang-'] pre {
     font-size: 13px;
     line-height: 20px;
 }
