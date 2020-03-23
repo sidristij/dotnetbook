@@ -68,6 +68,13 @@ code, *[class^='lang-'] span, *[class^='lang-'] pre {
     border-left-width: 3px;
     padding-left: 25px;
     display: block;
+    background-color: aliceblue !important;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+*[class^='lang-'] > div pre, pre > code pre {
+    margin-bottom: 0;
 }
 
 p code {
