@@ -62,14 +62,15 @@ code, *[class^='lang-'] span, *[class^='lang-'] pre {
 }
 
 
-*[class^='lang-'] > div {
+*[class^='lang-'] > div, pre > code {
     border-left-color: #eee;
     border-left-style: dotted;
     border-left-width: 3px;
     padding-left: 25px;
+    display: block;
 }
 
-code {
+p code {
     font-size: 14px;
     border: gainsboro;
     border-width: 1px;
@@ -78,7 +79,7 @@ code {
     color: darkslateblue;
 }
 
-*[class^='lang-'] span, *[class^='lang-'] pre {
+*[class^='lang-'] span, *[class^='lang-'] pre, pre > code {
     font-size: 13px;
     line-height: 20px;
 }
@@ -87,6 +88,12 @@ p a, li a {
     text-decoration: none;
     color: inherit;
     box-shadow: inset 0 -1px #b88b59;
+}
+
+blockquote h5 {
+    background-color: aquamarine;
+    margin: 16px 0 16px -20px;
+    padding: 15px 30px 15px;
 }
 
 p img {
