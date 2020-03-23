@@ -31,6 +31,28 @@ ul li {
     font-family: inherit;
 }
 
+table {
+    margin: 30px 0;
+    width: 100%;
+}
+
+thead {                         
+    background-color: aliceblue;
+}
+
+table th {
+    font-weight: 400;
+}
+
+table td, table th {
+    padding: 7px;
+    border-top: solid darkgrey 1px;
+    border-bottom: solid darkgrey 1px;
+    border-right: dotted darkgray 1px;
+    border-left: dotted darkgray 1px;
+    font-size: smaller;
+}
+
 code, *[class^='lang-'] span, *[class^='lang-'] pre {
     font-family: JB Mono, monospace !important;
 }
