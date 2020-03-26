@@ -189,16 +189,17 @@ h2 {
 h3 {
     margin: 30px 0 15px 0;
     font-size: 17pt;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 h4 {
     margin: 20px 0 10px 0;
     font-size: 16pt;
-    font-weight: 400;
+    font-weight: 500;
+    font-style: italic;
 }
 
-/* Fonts */
+/* Fonts 
 
 /*@font-face {*/
 /*    font-family: 'PF Regal';*/
@@ -221,7 +222,7 @@ h4 {
     font-weight: bold;
     font-style: normal;
 }
-
+*/
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-Medium.eot');
