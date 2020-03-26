@@ -10,7 +10,7 @@ strong {
 }
 
 p, li {
-    margin: 0 0 14px;
+    margin: 0 0 20px;
     line-height: 32px;
     font-family: inherit;
 }
@@ -27,37 +27,66 @@ ol li {
 }
 
 ul li {
-    padding-left: 5px;	
+    padding-left: 12px;	
     font-family: inherit;
 }
 
-code, .lang-csharp span, .lang-csharp pre {
+table {
+    margin: 30px 0;
+    width: 100%;
+}
+
+thead {                         
+    background-color: aliceblue;
+}
+
+table th {
+    font-weight: 400;
+}
+
+table td, table th {
+    padding: 7px;
+    border-top: solid darkgrey 1px;
+    border-bottom: solid darkgrey 1px;
+    border-right: dotted darkgray 1px;
+    border-left: dotted darkgray 1px;
+    font-size: smaller;
+}
+
+code, *[class^='lang-'] span, *[class^='lang-'] pre {
     font-family: JB Mono, monospace !important;
 }
 
-.lang-csharp {
+*[class^='lang-'] {
     padding: 4px 0px 14px 0px;
 }
 
 
-.lang-csharp > div {
+*[class^='lang-'] > div, pre > code {
     border-left-color: #eee;
     border-left-style: dotted;
     border-left-width: 3px;
-    background-color: #f5faff !important;
-    padding: 10px 10px 10px 25px;
+    padding-left: 25px;
+    display: block;
+    background-color: aliceblue !important;
+    padding-top: 20px;
+    padding-bottom: 20px;
 }
 
-code {
-    font-size: 14px;
+*[class^='lang-'] > div pre, pre > code pre {
+    margin-bottom: 0;
+}
+
+p code, li code {
+    font-size: 16px;
     border: gainsboro;
     border-width: 1px;
     border-style: solid;
-    padding: 2px;
+    padding: 4px;
     color: darkslateblue;
 }
 
-.lang-csharp span, .lang-csharp pre {
+*[class^='lang-'] span, *[class^='lang-'] pre, pre > code {
     font-size: 13px;
     line-height: 20px;
 }
@@ -66,6 +95,12 @@ p a, li a {
     text-decoration: none;
     color: inherit;
     box-shadow: inset 0 -1px #b88b59;
+}
+
+blockquote h5 {
+    background-color: aquamarine;
+    margin: 16px 0 16px -20px;
+    padding: 15px 30px 15px;
 }
 
 p img {
@@ -131,7 +166,7 @@ h2 {
 }
 
 h3 {
-    margin: 30px 0 10px 0;
+    margin: 30px 0 15px 0;
     font-size: 17pt;
     font-weight: 500;
 }
