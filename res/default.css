@@ -125,6 +125,7 @@ p:has( > img) {
 
 blockquote > p.big-quote {
     margin: 40px 0 60px 0;
+    font-family: Charter;
     font-size: 55px;
     line-height: 60px;
     width: 150%;
@@ -199,16 +200,16 @@ h4 {
 
 /* Fonts */
 
-@font-face {
-    font-family: 'PF Regal';
-    src: url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.eot');
-    src: local('{RES_PATH}/fonts/PFRegalTextPro-RegularA'),
-        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.woff2') format('woff2'),
-        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.woff') format('woff'),
-        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.ttf') format('truetype');
-    font-weight: 300;
-    font-style: normal;
-}
+/*@font-face {*/
+/*    font-family: 'PF Regal';*/
+/*    src: url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.eot');*/
+/*    src: local('{RES_PATH}/fonts/PFRegalTextPro-RegularA'),*/
+/*        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.woff2') format('woff2'),*/
+/*        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.woff') format('woff'),*/
+/*        url('{RES_PATH}/fonts/PFRegalTextPro-RegularA.ttf') format('truetype');*/
+/*    font-weight: 300;*/
+/*    font-style: normal;*/
+/*}*/
 
 @font-face {
     font-family: 'PF Regal';
@@ -309,7 +310,14 @@ h4 {
     font-style: italic;
 }
 
-/*  Regular B *
+@font-face {
+    font-family: 'Charter';
+    src: url('{RES_PATH}/fonts/charter-regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/*  Regular B */
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.eot');
@@ -317,7 +325,7 @@ h4 {
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.woff2') format('woff2'),
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.woff') format('woff'),
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularBItalic.ttf') format('truetype');
-    font-weight: normal;
+    font-weight: 300;
     font-style: italic;
 }
 
@@ -328,6 +336,6 @@ h4 {
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularB.woff2') format('woff2'),
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularB.woff') format('woff'),
         url('{RES_PATH}/fonts/PFRegalTextPro-RegularB.ttf') format('truetype');
-    font-weight: normal;
+    font-weight: 300;
     font-style: normal;
-}              */
+}              
