@@ -77,13 +77,25 @@ code, *[class^='lang-'] span, *[class^='lang-'] pre {
     margin-bottom: 0;
 }
 
-p code, li code {
+p code:not(.highlight), li code:not(.highlight) {
     font-size: 16px;
     border: gainsboro;
     border-width: 1px;
     border-style: solid;
     padding: 4px;
     color: darkslateblue;
+}
+
+code.highlight {
+    font-family: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+}
+
+p code.highlight, li code.highlight {
+    padding: 4px;
+    background-color: #ffffa1;
 }
 
 *[class^='lang-'] span, *[class^='lang-'] pre, pre > code {
@@ -107,11 +119,19 @@ p img {
     width: 95%;
 }
 
-p (:has img) {
+p:has( > img) {
     text-align: center;
 }
 
-blockquote {
+blockquote > p.big-quote {
+    margin: 40px 0 60px 0;
+    font-size: 55px;
+    line-height: 60px;
+    width: 150%;
+    padding: 0;
+}
+
+blockquote:not( p.big-quote) {
     background-color: lavenderblush;
     padding-left: 20px;
     border-left: 1px solid rgba(0,0,0,.08);
