@@ -10,7 +10,7 @@ strong {
 }
 
 p, li {
-    margin: 0 0 20px;
+    margin: 0 0 25px;
     line-height: 32px;
     font-family: inherit;
 }
@@ -53,16 +53,16 @@ table td, table th {
     font-size: smaller;
 }
 
-code, *[class^='lang-'] span, *[class^='lang-'] pre {
+code, *[class*='lang-'] span, *[class*='lang-'] pre {
     font-family: JB Mono, monospace !important;
 }
 
-*[class^='lang-'] {
-    padding: 4px 0px 14px 0px;
+*[class*='lang-'] {
+    padding: 0px 0px 25px 0px;
 }
 
 
-*[class^='lang-'] > div, pre > code {
+*[class*='lang-'] > div, pre > code {
     border-left-color: #eee;
     border-left-style: dotted;
     border-left-width: 3px;
@@ -73,7 +73,7 @@ code, *[class^='lang-'] span, *[class^='lang-'] pre {
     padding-bottom: 20px;
 }
 
-*[class^='lang-'] > div pre, pre > code pre {
+*[class*='lang-'] > div pre, pre > code pre {
     margin-bottom: 0;
 }
 
@@ -98,7 +98,11 @@ p code.highlight, li code.highlight {
     background-color: #ffffa1;
 }
 
-*[class^='lang-'] span, *[class^='lang-'] pre, pre > code {
+.wide {
+    width:150%;
+}
+
+*[class*='lang-'] span, *[class*='lang-'] pre, pre > code {
     font-size: 13px;
     line-height: 20px;
 }
