@@ -137,9 +137,9 @@ blockquote > p.big-quote {
 }
 
 blockquote:not( p.big-quote) {
-    background-color: lavenderblush;
-    padding-left: 20px;
-    border-left: 1px solid rgba(0,0,0,.08);
+    background-color: lavenderblush !important;
+    padding-left: 20px !important;
+    border-left: 1px solid rgba(0,0,0,.08) !important;
 }
 
 blockquote p {
