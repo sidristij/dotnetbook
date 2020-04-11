@@ -203,6 +203,41 @@ h4 {
     font-style: italic;
 }
 
+/* Sidenotes */
+
+.aside-container {
+    position: relative;
+}
+.aside-container > p {
+    position: relative;
+    top: 9px;
+}
+.aside-container > .aside-side-container {
+    display: block;
+    position: absolute;
+    top: 10px;
+    width: 40%;
+    left: 120%;
+    font-size: 12pt;
+    line-height: 20px;
+    z-index: 1000;
+}
+
+.aside-side-container > li {
+    display: block;
+    font-family: Charter;
+}
+
+.aside-side-container p {
+    line-height: 25px;
+    margin: 0;
+}
+
+.aside-side-container blockquote {
+    border: aliceblue;
+    border-left-style: solid;
+}
+
 /* Fonts 
 
 /*@font-face {*/
