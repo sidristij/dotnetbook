@@ -215,9 +215,9 @@ h4 {
 .aside-container > .aside-side-container {
     display: block;
     position: absolute;
-    top: 10px;
+    top: 12px;
     width: 40%;
-    left: 120%;
+    left: 110%;
     font-size: 12pt;
     line-height: 20px;
     z-index: 1000;
@@ -225,6 +225,19 @@ h4 {
 
 .aside-side-container > li {
     display: block;
+    font-family: Charter;
+}
+
+.aside-side-container > li ul, .aside-side-container > li ol {
+    padding-left: 30px;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.aside-side-container > li li {
+    padding-left: 6px;
+    margin: 0 0 6px;
+    line-height: 22px;
+
     font-family: Charter;
 }
 
