@@ -243,7 +243,8 @@ h4 {
 
 .aside-side-container p {
     line-height: 25px;
-    margin: 0;
+    font-size: 13pt;
+    margin: 0 0 15px 0;
 }
 
 .aside-side-container blockquote {
