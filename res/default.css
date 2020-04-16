@@ -216,10 +216,14 @@ h4 {
     display: block;
     position: absolute;
     top: 12px;
-    width: 40%;
     left: 110%;
     font-size: 12pt;
     line-height: 20px;
+    
+    border-radius: 5px;
+    background-image: linear-gradient(180deg,hsla(0,0%,100%,0) 60%,#fff),linear-gradient(70deg,#dbedff 32%,#ebfff0);
+    padding: 22px;
+
     z-index: 1000;
 }
 
