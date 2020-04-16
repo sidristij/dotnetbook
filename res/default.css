@@ -123,10 +123,6 @@ p img {
     width: 95%;
 }
 
-p:has( > img) {
-    text-align: center;
-}
-
 blockquote > p.big-quote {
     margin: 40px 0 60px 0;
     font-family: Charter;
@@ -212,19 +208,30 @@ h4 {
     position: relative;
     top: 9px;
 }
+
 .aside-container > .aside-side-container {
     display: block;
     position: absolute;
     top: 12px;
     left: 110%;
+    width: 40%;
     font-size: 12pt;
     line-height: 20px;
-    
+
+    z-index: 1000;
+}
+
+.side-regular-block {
     border-radius: 5px;
     background-image: linear-gradient(180deg,hsla(0,0%,100%,0) 60%,#fff),linear-gradient(70deg,#dbedff 32%,#ebfff0);
     padding: 22px;
+}
 
-    z-index: 1000;
+/* Music side player */
+
+.aside-side-container .music-player {
+    width: 100%;
+    height: 400px;
 }
 
 .aside-side-container > li {
