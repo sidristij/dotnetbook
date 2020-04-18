@@ -1,4 +1,6 @@
-﻿# Memory\<T> и Span\<T>
+﻿>{.breadcrumbs} [Содержание](../readme.md) / [Основы управления памятью](./01-00-MemoryManagement-Intro.md)
+
+# Memory\<T> и Span\<T>
 
 > [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/55)
 

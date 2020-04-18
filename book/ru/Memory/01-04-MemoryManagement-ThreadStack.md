@@ -1,6 +1,6 @@
-﻿# Стек потока
+﻿>{.breadcrumbs} [Содержание](../readme.md) / [Основы управления памятью](./01-00-MemoryManagement-Intro.md)
 
-> [Ссылка на обсуждение](https://github.com/sidristij/dotnetbook/issues/58)
+# Стек потока
 
 ## Базовая структура, платформа x86
 
