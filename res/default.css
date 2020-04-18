@@ -314,6 +314,14 @@ h4 {
         margin-left: 50px;
         margin-right: 50px;
     }
+
+    blockquote.big-quote > p {
+        width: 130%;
+        font-size: 30pt;
+        line-height: 45px;
+        margin: 0;
+        padding: 4px 0 30px 0;
+    }
 }
 
 /* MD */
@@ -344,6 +352,14 @@ h4 {
         margin-top: 20px;
         font-size: 13pt;
         border: none;
+    }
+
+    blockquote.big-quote > p {
+        width: 100%;
+        font-size: 30pt;
+        line-height: 40px;
+        margin: 0;
+        padding: 4px 0 30px 0;
     }
 }
 
