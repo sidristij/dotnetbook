@@ -223,7 +223,7 @@ h4 {
 .aside-container {
     position: relative;
 }
-.aside-container > p {
+.aside-container p {
     position: relative;
     top: 9px;
 }
@@ -232,11 +232,11 @@ h4 {
     display: block;
     position: absolute;
     top: 12px;
-    left: 110%;
+    left: 100%;
     width: 40%;
     font-size: 12pt;
     line-height: 20px;
-
+    margin-left: 100px;
     z-index: 1000;
 }
 
@@ -286,6 +286,35 @@ h4 {
     border-left-style: solid;
 }
 
+/* Paragraphs numbering */
+.paragraph-container {
+    position: relative;
+}
+.paragraph-container p {
+    position: relative;
+    top: 9px;
+}
+.paragraph-container > .paragraph-left-side, .paragraph-container > .paragraph-right-side  {
+    font-family: JB Mono, consolas;
+    display: block;
+    position: absolute;
+    top: 17px;
+    font-size: 11pt;
+    line-height: 20px;
+    color: #86abc4;
+    z-index: 1000;
+}
+.paragraph-container > .paragraph-left-side {
+    left: -55px;
+    width: 35px;
+}
+
+.paragraph-container > .paragraph-right-side  {
+    left: 100%;
+    width: 35px;
+    padding-left: 45px;
+}
+
 /* .book-container
 {
     ;
@@ -322,10 +351,13 @@ h4 {
         margin: 0;
         padding: 4px 0 30px 0;
     }
+
+    .paragraph-container .paragraph-left-side {
+        left: -32px;
+    }
 }
 
 /* MD */
-
 @media (max-width: 991px) {
     .book-container {
         margin: 0 100px;
@@ -340,13 +372,24 @@ h4 {
         left: auto;
         width: auto;
         height: auto;
+        margin: 0;
+        padding: 17px;
     }
+
+    .aside-container p {
+        top: 0;
+    }
+
     .side-regular-block {
         margin: 40px 10px;
+        padding-left: 100px;
     }
     .aside-side-container .music-player {
         width: 100%;
         height: 100px;
+    }
+    .aside-side-container.side-media-block {
+        padding: 17px 0;
     }
     .aside-side-container.side-media-block h2 {
         margin-top: 20px;
@@ -381,12 +424,15 @@ h4 {
         margin-right: 30px;
         padding-left: 25px;
     }
+    .paragraph-container > .paragraph-right-side {
+        padding-left: 20px;
+    }
 }
 
 /* Smartphone - XS */
 @media (max-width: 575px) {
     .book-container {
-        margin: 0 30px;
+        margin: 0 50px 0 30px;
     }
     ul {
         margin: 0;
@@ -400,6 +446,13 @@ h4 {
     p, li {
         line-height: 28px;
     }    
+    .paragraph-container .paragraph-left-side {
+        display: none;
+    }
+    .paragraph-container .paragraph-right-side {
+        padding-left: 10px;
+    }
+
 }
 
 /* Fonts 
@@ -425,7 +478,7 @@ h4 {
     font-weight: bold;
     font-style: normal;
 }
-*/
+
 @font-face {
     font-family: 'PF Regal';
     src: url('{RES_PATH}/fonts/PFRegalTextPro-Medium.eot');
