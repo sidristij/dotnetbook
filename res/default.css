@@ -46,7 +46,7 @@ strong {
 }
 
 p, li {
-    margin: 0 0 25px;
+    margin: 0 0 1em;
     line-height: 1.5em;
     font-family: inherit;
 }
@@ -117,11 +117,11 @@ code, *[class*='lang-'] span, *[class*='lang-'] pre {
 }
 
 p code:not(.highlight), li code:not(.highlight) {
-    font-size: 0.8em;
+    font-size: 0.7em;
     border: gainsboro;
     border-width: 1px;
     border-style: solid;
-    padding: 4px;
+    padding: 3px;
     color: darkslateblue;
 }
 
@@ -212,28 +212,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-    font-size: 40px;
-    font-family: PF Regal,Georgia,serif;
+    font-size: 2.2em;
+    font-family: Charter,Georgia,serif;
     font-weight: 300;
-    margin: 40px 0 20px 0;
-    border-bottom-style: ridge;
-    padding-bottom: 10px;
-}
-
-h1 b {
-    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
-    font-weight: 700;
-    font-size: 37px;
-    line-height: 42px;
+    margin: 1.8em 0 1.8em 0;
+    text-align: center;
 }
 
 h2 {
-    margin-top: 35px;
-    margin-bottom: 10px;
-    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 24px;
+    margin-top: 2em;
+    margin-left: 1.2em;
+    font-family: Charter,Arial,Helvetica Neue,sans-serif;
+    font-size: 1.25em;
+    width: 70%;
 }
 
 h3 {
@@ -287,15 +278,18 @@ h4 {
 .side-regular-block p {
     top: 0;
 }
-/* Music side player */
 
+/* Music side player */
 .aside-side-container .music-player {
     width: 100%;
     height: 400px;
 }
 
-.aside-side-container.side-media-block h2 {
-    margin-top: -12px;
+/* media block after h1 */
+.aside-container h1 + .aside-side-container.side-media-block h2 {
+    margin: 7em 0 1em 0;
+    font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
+    font-weight: 600;
 }
 
 .aside-side-container > li {
@@ -431,6 +425,11 @@ h4 {
 
 /* MD */
 @media (max-width: 991px) {
+    
+    h2 {
+        width:80%;
+    }
+
     .book-container
     {
         margin-left: 3cm;
@@ -463,6 +462,14 @@ h4 {
 
     .aside-container p {
         top: 0;
+    }
+
+    .aside-container h1 + .aside-side-container.side-media-block h2 {
+        display: none;
+    }
+
+    .wide {
+        width: 100%;     
     }
 
     .side-regular-block {
