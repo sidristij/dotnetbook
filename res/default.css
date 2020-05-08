@@ -378,6 +378,45 @@ h4 {
     padding: 0;
 }
 
+footer {
+    background-color: black;
+    height: 4em;
+}
+
+.footer-container {
+    height: 100%;
+}
+
+.footer-wrap {
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 0;
+}
+
+.footer-wrap p {
+    margin: 0;
+    padding: 0px;
+    line-height: 1em;
+}
+
+.footer-container img {
+    height: 1.6em;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.footer-link {
+    color: white;
+    margin: 0 7px;
+    font-size: 1em;
+    box-shadow: none;
+}
+.footer-link:hover {
+    color: salmon;
+    box-shadow: none;
+}
 
 /* MEDIA */
 /* XXL */
@@ -537,6 +576,10 @@ h4 {
         margin: 73px 0 110px 0;
     }
 
+    h1 {
+        margin: 1.8em 0em 1.8em 0.3em;
+    }
+
     .book-title {
         font-size: 40pt;
         margin: 50px 0 70px 0;
@@ -563,16 +606,19 @@ h4 {
         padding-left: 25px;
     }
     .paragraph-container > .paragraph-left-side {
-	display: block;
+	    display: block;
         top: 14px;
         font-size: 9pt;
     }
     .paragraph-container > .paragraph-right-side {
-	display: block;
+    	display: block;
         padding-left: 40px;
         top: 14px;
         font-size: 9pt;
     }
+    .footer-container img {
+        height: 1.3em;
+    } 
 }
 
 @media (max-width: 630px) {
@@ -615,6 +661,9 @@ h4 {
         top: 14px;
 	font-size: 8pt;
     }
+    .footer-container img {
+        height: 1em;
+    } 
 }
 
 /* Fonts */
@@ -788,4 +837,59 @@ h4 {
         url('{RES_PATH}/fonts/JetBrainsMono-Medium-Italic.ttf') format('truetype');
     font-weight: 500;
     font-style: italic;
+}
+@font-face {
+    font-family: 'Font Awesome 5 Free';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("{RES_PATH}/fonts/webfonts/fa-regular-400.eot");
+    src: url("{RES_PATH}/fonts/webfonts/fa-regular-400.eot?#iefix") format("embedded-opentype"), 
+         url("{RES_PATH}/fonts/webfonts/fa-regular-400.woff2") format("woff2"), 
+         url("{RES_PATH}/fonts/webfonts/fa-regular-400.woff") format("woff"), 
+         url("{RES_PATH}/fonts/webfonts/fa-regular-400.ttf") format("truetype"), 
+         url("{RES_PATH}/fonts/webfonts/fa-regular-400.svg#fontawesome") format("svg"); 
+    font-display: swap;
+}
+    
+.fa {
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+  font-family: 'Font Awesome 5 Brands';
+  font-style: normal;
+  font-weight: 400;
+  font-display: auto;
+  src: url("{RES_PATH}/fonts/fa-brands-400.eot");
+  src: url("{RES_PATH}/fonts/fa-brands-400.eot?#iefix") format("embedded-opentype"), url("{RES_PATH}/fonts/fa-brands-400.woff2") format("woff2"), url("{RES_PATH}/fonts/fa-brands-400.woff") format("woff"), url("{RES_PATH}/fonts/fa-brands-400.ttf") format("truetype"), url("{RES_PATH}/fonts/fa-brands-400.svg#fontawesome") format("svg"); 
+}
+
+.fab {
+  font-family: 'Font Awesome 5 Brands';
+  font-weight: 400; 
+}
+
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  font-style: normal;
+  font-weight: 400;
+  font-display: auto;
+  src: url("{RES_PATH}/fonts/fa-regular-400.eot");
+  src: url("{RES_PATH}/fonts/fa-regular-400.eot?#iefix") format("embedded-opentype"), url("{RES_PATH}/fonts/fa-regular-400.woff2") format("woff2"), url("{RES_PATH}/fonts/fa-regular-400.woff") format("woff"), url("{RES_PATH}/fonts/fa-regular-400.ttf") format("truetype"), url("{RES_PATH}/fonts/fa-regular-400.svg#fontawesome") format("svg"); 
+}
+
+.far {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 400; 
+}
+
+@font-face {
+  font-family: 'Font Awesome 5 Free';
+  font-style: normal;
+  font-weight: 900;
+  font-display: auto;
+  src: url("{RES_PATH}/fonts/fa-solid-900.eot");
+  src: url("{RES_PATH}/fonts/fa-solid-900.eot?#iefix") format("embedded-opentype"), url("{RES_PATH}/fonts/fa-solid-900.woff2") format("woff2"), url("{RES_PATH}/fonts/fa-solid-900.woff") format("woff"), url("{RES_PATH}/fonts/fa-solid-900.ttf") format("truetype"), url("{RES_PATH}/fonts/fa-solid-900.svg#fontawesome") format("svg"); 
 }
