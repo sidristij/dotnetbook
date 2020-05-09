@@ -9,10 +9,8 @@
 <body>
     <link rel="stylesheet" href="{RES_PATH}/bootstrap.css">
     <link rel="stylesheet" href="{RES_PATH}/awesome.css">
-    <style>
-        <!--clone-from:./default.css-->  
-    </style>
-    
+    <!--clone-from:./default.css-->  
+    <!--
     <div class="book-title-container d-none d-md-block">
         <div class="book-title">Knowledge Base</div>
         <div class="book-part-title-block">pt.1 <a href="{TARGET_ROOT_PATH}/ru/Memory/01-00-MemoryManagement-Intro.html" class="book-part-title">Управление памятью</a></div>
@@ -21,6 +19,66 @@
         / <a href="#" class="book-superheading-title">Упрощенное описание</a>
         / <a href="#" class="book-superheading-title">Подробное описание</a>
     </div>
+    -->
+    <header class="header fixed">
+        <p class="conflogo">KB</p> 
+        <div class="menu">
+            <div><a href="index.html">О конференции</a></div>
+            <div><a href="mentor.html">Ментор</a></div>
+            <div><a href="practice.html">Практика</a></div>
+            <div><a href="matrix.html">Доклады</a></div>
+            <a href="register.html" class="register_button">РЕГИСТРАЦИЯ</a>
+        </div>
+
+        <!-- mobile-menu -->
+
+        <div class="hamburger-menu">
+            <input id="menu__toggle" type="checkbox" />
+            <label class="menu__btn" for="menu__toggle">
+              <span></span>
+            </label>
+        
+            <div class="menu__box">
+                <p class="menu__header_current">На странице</p>
+                <ol class="menu__list">
+                    <!--structure:2-->
+                </ol>
+                <p class="menu__header_total">Содержание</p>
+                <ul style="padding: 0;">
+                    <li style="
+                        display: inline-block;
+                        width: 100%;
+                        margin: 0;
+                        text-align: center;
+                        font-size: 1.2em;
+                        font-family: charter;
+                        ">
+                        <p>Управление памятью</p>
+                        <ul>
+                            <li>A</li>
+                            <li>B</li>
+                            <li>C</li>
+                        </ul>
+                    </li>
+                    <li style="
+                        display: inline-block;
+                        width: 100%;
+                        margin: 0;
+                        text-align: center;
+                        font-family: charter;
+                        font-size: 1.2em;
+                        ">
+                        <p>Управление памятью</p>
+                        <ul>
+                            <li>A</li>
+                            <li>B</li>
+                            <li>C</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
 
     <div class="book-container">
         <div class="article-container">
