@@ -495,6 +495,8 @@ h4 {
     box-shadow: 1px 0px 6px rgba(0, 0, 0, .2);
 
     transition-duration: .25s;
+
+    overflow-y: auto;
 }
 .menu__box li a:hover {
     text-decoration: none;
@@ -514,6 +516,7 @@ h4 {
     margin: 0.95em 0 0 1em;
     font-size: 1.5em;
     font-family: Charter;
+    user-select: none;
 }
 
 .invisible {
@@ -536,8 +539,8 @@ h4 {
 .menu__header_total
 {
     text-align: center;
-    font-size: 2em;
-    margin: 1.5em 0 1em 0;
+    font-size: 2.4em;
+    margin: 1.7em 0 1em 0;
 }
 
 /* X_FOOTER */
