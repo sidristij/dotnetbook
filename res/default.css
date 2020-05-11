@@ -385,7 +385,7 @@ h4 {
 }
 
 .header {
-    height: 4em;
+    height: 2.5em;
     background-color: white;
     position: relative;
     z-index: 1500;
@@ -448,11 +448,11 @@ h4 {
     position: fixed;
     top: 0;
     right: 0;
-    width: 1.4em;
-    height: 1.0em;
+    width: 1.1em;
+    height: 0.6em;
     cursor: pointer;
     z-index: 1;
-    margin: 1.5em;
+    margin: 1.0em;
 }
 
 .menu__btn > span,
@@ -514,9 +514,8 @@ h4 {
 /* X_HEADER */
 
 .conflogo {
-    height: 1.2em;
-    margin: 0.95em 0 0 1em;
-    font-size: 1.5em;
+    margin: 0.5em 0 0 0.8em;
+    font-size: 1.1em;
     font-family: Charter;
     user-select: none;
 }
