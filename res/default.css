@@ -504,6 +504,7 @@ h4 {
     color: inherit;
 }
 .menu__list {
+    font-size: 0.9em;
     margin: 0 2em 0 2em;
 }
 .menu__list li {
@@ -543,7 +544,32 @@ h4 {
     font-size: 2.4em;
     margin: 1.7em 0 0.3em 0;
 }
-
+.menu__header_list 
+{
+    padding: 0;
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+.menu__header_list > li 
+{
+    display: inline-block;
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    font-family: charter;
+}
+.menu__header_total_sub
+{
+    font-size: 1.4em;
+    margin: 2em 0 1em 0;
+}
+.menu__header_total_sub2
+{
+    font-size: 1.1em;
+    margin: 1.5em 0 0.6em 1em;
+    text-align: left;
+}
 /* X_FOOTER */
 
 footer {
@@ -743,7 +769,14 @@ footer > div {
 
     .menu__list
     {
-        margin: 0 auto 0 auto;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .menu__list, .menu__header_total_sub2
+    {
+        margin-left: auto;
+        margin-right: auto;
         max-width: 800px;
         width: 80%;
     }
