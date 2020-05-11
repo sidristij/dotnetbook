@@ -909,6 +909,10 @@ footer > div {
     .menu__list {
         margin: 0 1em 0 1em;
     }
+    .menu__header_total_sub2
+    {
+        margin: 1.5em 0 0.6em 1em;
+    }
 }
 
 /* Fonts */
