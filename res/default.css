@@ -448,11 +448,12 @@ h4 {
     position: fixed;
     top: 0;
     right: 0;
-    width: 1.1em;
-    height: 0.6em;
+    width: 2.5em;
+    height: 2.5em;
     cursor: pointer;
     z-index: 1;
-    margin: 1.0em;
+    margin: 0;
+    padding: 0.7em;
 }
 
 .menu__btn > span,
@@ -461,7 +462,7 @@ h4 {
     display: block;
     position: absolute;
 
-    width: 100%;
+    width: 1.1em;
     height: 1px;
 
     background-color: black;
@@ -786,7 +787,7 @@ footer > div {
         padding: 0 3cm 0 3cm;
         overflow: scroll;
         overflow-x: auto;
-        top: 4em;
+        top: 2.5em;
         bottom: 0;
         width: 100%;
         margin: 0;
