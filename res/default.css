@@ -233,14 +233,14 @@ h1 {
 }
 
 h2 {
-    margin-top: 2em;
+    padding-top: 1.5em;
     font-family: Charter, Arial, Helvetica Neue, sans-serif;
     font-size: 1.25em;
     width: 70%;
 }
 
 h3 {
-    margin: 1.5em 0 0 0;
+    padding-top: 1em;
     font-size: 1.3em;
     font-weight: 300;
     font-style: italic;
@@ -469,17 +469,17 @@ h4 {
     width: 1.1em;
     height: 1px;
 
-    background-color: black;
+    border-bottom: 1px black solid;
 
     transition-duration: .25s;
 }
 .menu__btn > span::before {
     content: '';
-    top: -8px;
+    top: -7px;
 }
 .menu__btn > span::after {
     content: '';
-    top: 8px;
+    top: 7px;
 }
 
 .menu__box {
