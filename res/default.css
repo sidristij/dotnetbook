@@ -121,11 +121,15 @@ code, *[class*='lang-'] span, *[class*='lang-'] pre {
 
 p code:not(.highlight), li code:not(.highlight) {
     font-size: 0.7em;
+    padding: 3px;
+    color: darkslateblue;
+}
+
+/* style for manual selecting */
+.box {
     border: gainsboro;
     border-width: 1px;
     border-style: solid;
-    padding: 3px;
-    color: darkslateblue;
 }
 
 code.highlight {
