@@ -27,5 +27,3 @@
 - **TypeRefs Heap** -- куча Type References -- описателей типов .NET -- со стороны подсистемы CLR (со стороны .NET типов выступает подсистема Reflection)
 - **MethodRefs Heap** -- куча Methods References -- описателей методов .NET -- со стороны подсистемы CLR (со стороны .NET типов выступает подсистема Reflection)
 - И многие другие
-
->{.breadcrumbs} [Содержание](../readme.md)
