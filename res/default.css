@@ -73,6 +73,35 @@ ol li, ul li {
     text-align: justify;
 }
 
+.table-container {
+    display: block;
+    width: 100%;
+}
+
+.table-width-6 
+{
+    margin-left: 25%;
+    margin-right: 25%;
+}
+
+.table-width-8 
+{
+    margin-left: 12.5%;
+    margin-right: 12.5%;
+}
+
+.table-width-10 
+{
+    margin-left: 6.25%;
+    margin-right: 6.25%;
+}
+
+.table-width-12 
+{
+    margin-left: 0;
+    margin-right: 0;
+}
+
 table {
     margin: 30px 0;
     width: 100%;
@@ -663,6 +692,24 @@ footer > div {
     blockquote.big-quote > p {
         font-size: 2em;
     }
+    
+    .table-width-6 
+    {
+        margin-left: 20%;
+        margin-right: 20%;
+    }
+
+    .table-width-8 
+    {
+        margin-left: 10%;
+        margin-right: 10%;
+    }
+
+    .table-width-10 
+    {
+        margin-left: 5%;
+        margin-right: 5%;
+    }
 }
 
 /* > MD */
@@ -775,6 +822,24 @@ footer > div {
         margin: 0 0 10px 0;
     }
 
+    .table-width-6 
+    {
+        margin-left: 25%;
+        margin-right: 25%;
+    }
+
+    .table-width-8 
+    {
+        margin-left: 12.5%;
+        margin-right: 12.5%;
+    }
+
+    .table-width-10 
+    {
+        margin-left: 6.25%;
+        margin-right: 6.25%;
+    }
+
     .side-regular-block {
         border-radius: 5px;
         background-image: linear-gradient(180deg,hsla(0,0%,100%,0) 60%,#fff),linear-gradient(70deg,#dbedff 32%,#ebfff0);
@@ -856,6 +921,25 @@ footer > div {
         margin-right: 30px;
         padding-left: 25px;
     }
+    
+    .table-width-6 
+    {
+        margin-left: 20%;
+        margin-right: 20%;
+    }
+
+    .table-width-8 
+    {
+        margin-left: 10%;
+        margin-right: 10%;
+    }
+
+    .table-width-10 
+    {
+        margin-left: 0%;
+        margin-right: 0%;
+    }
+    
     .paragraph-container > .paragraph-left-side {
 	    display: block;
         top: 14px;
@@ -916,6 +1000,24 @@ footer > div {
     p, li {
         line-height: 24px;
     }    
+    
+    .table-width-6 
+    {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .table-width-8 
+    {
+        margin-left: 0%;
+        margin-right: 0%;
+    }
+
+    .table-width-10 
+    {
+        margin-left: 0%;
+        margin-right: 0%;
+    }
     
     .paragraph-container .paragraph-left-side 
     {
