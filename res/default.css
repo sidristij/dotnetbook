@@ -73,6 +73,19 @@ ol li, ul li {
     text-align: justify;
 }
 
+.image-container {
+    margin-top: 2em;
+    margin-bottom: 1.0em;
+    text-align: center;
+}
+
+.image-container img {
+    width: fit-content;
+    max-width: 100%;
+    max-height: 21em;
+    object-fit: contain;
+}
+
 .table-container {
     display: block;
     margin-top: 2.1em;
