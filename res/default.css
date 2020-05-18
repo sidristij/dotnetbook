@@ -92,7 +92,7 @@ ol li, ul li {
     width: 100%;
 }
 
-.table-container + p.description {
+.table-container + p.description, .image-container + p.description {
     font-size: 0.8em;
     font-style: italic;
     text-align: center;
@@ -389,10 +389,6 @@ h5 {
 /* Paragraphs numbering */
 .paragraph-container {
     position: relative;
-}
-.paragraph-container p {
-    position: relative;
-    top: 9px;
 }
 
 .paragraph-container p, .aside-container > p {
@@ -1046,7 +1042,7 @@ footer > div {
     .paragraph-container .paragraph-right-side 
     {
         padding-left: 21px;
-        top: 14px;
+        top: 4px;
 	    font-size: 8pt;
     }
     .footer-container img {
