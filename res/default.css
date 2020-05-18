@@ -79,6 +79,10 @@ ol li, ul li {
     text-align: center;
 }
 
+.image-container p {
+    margin: 0;
+}
+
 .image-container img {
     width: fit-content;
     max-width: 100%;
@@ -92,7 +96,7 @@ ol li, ul li {
     width: 100%;
 }
 
-.table-container + p.description, .image-container + p.description {
+.table-container + p.description, .paragraph-container + p.description {
     font-size: 0.8em;
     font-style: italic;
     text-align: center;
