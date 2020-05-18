@@ -96,7 +96,7 @@ ol li, ul li {
     width: 100%;
 }
 
-.table-container + p.description, .paragraph-container + p.description {
+p.description {
     font-size: 0.8em;
     font-style: italic;
     text-align: center;
@@ -287,7 +287,7 @@ h1 {
 }
 
 h2 {
-    padding-top: 1.5em;
+    padding-top: 1em;
     padding-left: 1.5em;
     padding-right: 1.5em;
     margin-bottom: 0.5em;
@@ -297,7 +297,7 @@ h2 {
 }
 
 h3 {
-    padding-top: 1.2em;
+    padding-top: 1em;
     font-family: Charter, Arial, Helvetica Neue, sans-serif;
     font-size: 1.15em;
     width: 70%;
@@ -305,7 +305,7 @@ h3 {
 
 h4 {
     padding: 1em 0 0 0;
-    font-size: 1.2em;
+    font-size: 1em;
     font-weight: 300;
     font-style: italic;
 }
@@ -356,7 +356,7 @@ h5 {
 
 /* media block after h1 */
 .aside-container h1 + .aside-side-container.side-media-block h2 {
-    margin: 7em 0 1em 0;
+    margin: 5em 0 1em 0;
     font-family: Proxima Nova,Arial,Helvetica Neue,sans-serif;
     font-weight: 600;
 }
@@ -388,6 +388,10 @@ h5 {
 .aside-side-container blockquote {
     border: aliceblue;
     border-left-style: solid;
+}
+
+li blockquote {
+    margin-left: 1.5em;
 }
 
 /* Paragraphs numbering */
@@ -639,6 +643,10 @@ footer {
     margin-top: 2em;
     background-color: black;
     height: 4em;
+    margin-left: -4cm;
+    margin-right: -4cm;
+    padding-left: 4cm;
+    padding-right: 4cm;
 }
 
 footer > div {
@@ -1046,7 +1054,7 @@ footer > div {
     .paragraph-container .paragraph-right-side 
     {
         padding-left: 21px;
-        top: 4px;
+        top: 3px;
 	    font-size: 8pt;
     }
     .footer-container img {
