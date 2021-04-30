@@ -454,7 +454,7 @@ This exception is bad news which you don’t want to get. But if you get it, it�
 
 To catch this exception at the moment you should show a JIT-compiler it’s really necessary. Otherwise, it won’t be caught and you will get a broken application. However, you should catch this exception only if you can handle it properly: it may indicate a leak of memory if it was allocated by an unsafe method between calling this method and throwing `AccessViolationException`. At this point, an application may still function but its work may be incorrect because if you catch an error of a method call you will definitely try to call this method again. In this case, nobody knows what may go wrong: you can’t know how the state of an application was violated previously. However, if you still want to catch this exception, pay attention to the table of possible options for doing this in different versions of .NET Framework:
 
-.NET Framework version | AccessViolationExeception
+.NET Framework version | AccessViolationException
 ----------------------|-----------------------------------------------------------
 1.0                   | NullReferenceException
 2.0, 3.5              | AccessViolation can be caught
