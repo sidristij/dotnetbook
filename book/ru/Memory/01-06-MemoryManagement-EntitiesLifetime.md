@@ -73,7 +73,7 @@ public static class ObjectsPool<T> where T : class, new()
 Структуры обладают конструктором по-умолчанию, который нельзя переопределить. Можно написать так:
 
 ```csharp
-SomeStruct structInstance1 = defailt;
+SomeStruct structInstance1 = default;
 SomeStruct structInstance2 = new SomeStruct();
 ```
 
