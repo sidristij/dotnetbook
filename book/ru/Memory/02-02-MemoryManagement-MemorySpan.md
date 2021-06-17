@@ -134,7 +134,7 @@ if (TryParseInt32(arrSpan, out var res1))
 // String
 var srcString = "123456";
 var strSpan = srcString.AsSpan();
-if (TryParseInt32(arrSpan, out var res2))
+if (TryParseInt32(strSpan, out var res2))
 {
     Console.WriteLine(res2);
 }
@@ -144,7 +144,7 @@ Span<char> buf = stackalloc char[6];
 buf[0] = '1'; buf[1] = '2'; buf[2] = '3';
 buf[3] = '4'; buf[4] = '5'; buf[5] = '6';
 
-if (TryParseInt32(arrSpan, out var res3))
+if (TryParseInt32(buf, out var res3))
 {
     Console.WriteLine(res3);
 }
