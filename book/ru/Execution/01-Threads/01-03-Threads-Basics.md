@@ -362,10 +362,12 @@ unsafe void TraceWork(object x)
 И составим график зависимости линейного времени от объёма работы для всех трёх типов работы: просто цикл, ThreadPool и некий наш SmartThreadPool, речь о котором пойдёт чуть позже:
 
 ![](./img/TasksSpreadInCpuTicks_big-compare.png)
+ 
+Сревнение общего **линейного** времени исполнения  {.description}
 
-И немного увеличив:
+![](./img/TasksSpreadInCpuTicks_big-compare-full.png)
 
-![](./img/TasksSpreadInCpuTicks_big-compare-zoom.png)
+Сревнение общего времени исполнения с учётом параллелизма  {.description}
 
 Что мы увидим? Поскольку обычный цикл почти не имеет издержек (см табл), вплоть до 500 - 600 итераций он обгоняет параллелизацию через TheradPool и SmartThreadPool. Однако после - вперёд вырывается SmartThreadPool, удерживающий лидерство на всём остатке объемов рабочего цикла.
 
