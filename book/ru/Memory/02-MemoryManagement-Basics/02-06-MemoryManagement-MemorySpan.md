@@ -942,7 +942,7 @@ public class MultipleRuntimesConfig : ManualConfig
 
 После чего изучим результаты:
 
-![Performance chart](./imgs/Span/Performance.png)
+![Performance chart](../imgs/Span/Performance.png)
 
 Смотря на них можно почерпнуть следующую информацию:
 
